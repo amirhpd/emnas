@@ -32,34 +32,36 @@ class SearchSpace(object):
         activations = ["sigmoid", "tanh", "relu", "elu"]
 
         # keys as int
-        # cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
-        # dense_params = list(itertools.product(*[["Dense"], nodes, activations]))
-        # params = cnn_params + dense_params
-        # count = range(1, len(params)+1)
-        # token = dict(zip(count, params))
-        #
-        # token[count[-1]+1] = "dropout"
-        # if self.model_output_shape == 1:
-        #     token[count[-1]+2] = (1, "sigmoid")
-        # else:
-        #     token[count[-1]+2] = (self.model_output_shape, "softmax")
-
-        # keys as str
         cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
         cnn_count = range(1, len(cnn_params)+1)
-        cnn_keys = [f"c{i}" for i in cnn_count]
-        cnn_token = dict(zip(cnn_keys, cnn_params))
+        cnn_token = dict(zip(cnn_count, cnn_params))
 
         dense_params = list(itertools.product(*[["Dense"], nodes, activations]))
-        dense_count = range(1, len(dense_params)+1)
-        dense_keys = [f"d{i}" for i in dense_count]
-        dense_token = dict(zip(dense_keys, dense_params))
+        dense_count = range(cnn_count[-1]+1, cnn_count[-1] + len(dense_params)+1)
+        dense_token = dict(zip(dense_count, dense_params))
 
-        dense_token["drp"] = "dropout"
+        dense_token[dense_count[-1]+1] = "dropout"
         if self.model_output_shape == 1:
-            dense_token["out"] = (1, "sigmoid")
+            dense_token[dense_count[-1]+2] = (1, "sigmoid")
         else:
-            dense_token["out"] = (self.model_output_shape, "softmax")
+            dense_token[dense_count[-1]+2] = (self.model_output_shape, "softmax")
+
+        # keys as str
+        # cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
+        # cnn_count = range(1, len(cnn_params)+1)
+        # cnn_keys = [f"c{i}" for i in cnn_count]
+        # cnn_token = dict(zip(cnn_keys, cnn_params))
+        #
+        # dense_params = list(itertools.product(*[["Dense"], nodes, activations]))
+        # dense_count = range(1, len(dense_params)+1)
+        # dense_keys = [f"d{i}" for i in dense_count]
+        # dense_token = dict(zip(dense_keys, dense_params))
+        #
+        # dense_token["drp"] = "dropout"
+        # if self.model_output_shape == 1:
+        #     dense_token["out"] = (1, "sigmoid")
+        # else:
+        #     dense_token["out"] = (self.model_output_shape, "softmax")
 
         return {**cnn_token, **dense_token}
 
@@ -85,6 +87,7 @@ class SearchSpace(object):
         else:
             raise ValueError("Layer Type Unknown")
 
+        flatten_flag = False
         for layer in layers_info[1:-1]:
             if layer[0] == "Conv2D":
                 model.add(keras.layers.Conv2D(filters=layer[1], kernel_size=layer[2], strides=layer[3],
@@ -93,6 +96,10 @@ class SearchSpace(object):
                 model.add(keras.layers.DepthwiseConv2D(kernel_size=layer[2], strides=layer[3], padding=layer[4],
                                                        activation=layer[5]))
             elif layer[0] == "Dense":
+                if not flatten_flag:
+                    model.add(keras.layers.Flatten())
+                    flatten_flag = True
+
                 model.add(keras.layers.Dense(units=layer[1], activation=layer[2]))
             else:
                 raise ValueError("Layer Type Unknown")
