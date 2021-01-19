@@ -33,3 +33,5 @@ def test_controller():
     architecture = search_space.create_model(sequence=samples[0], model_input_shape=(128, 128, 3))
     print(architecture.summary())
     assert len(samples) == 10
+
+    controller.train_controller_rnn(0)
