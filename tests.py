@@ -2,6 +2,7 @@ import keras
 import numpy as np
 from controller import Controller
 from search_space import SearchSpace
+from trainer import Trainer
 
 
 def test_search_space():
@@ -20,7 +21,7 @@ def test_search_space():
 
 
 def test_controller():
-    controller = Controller(search_space_length=890)
+    controller = Controller()
     search_space = SearchSpace(model_output_shape=1)
     tokens = search_space.generate_token()
 
@@ -35,3 +36,15 @@ def test_controller():
     assert len(samples) == 10
 
     controller.train_controller_rnn(0)
+
+
+def test_trainer():
+    search_space = SearchSpace(model_output_shape=1)
+    controller = Controller()
+    trainer = Trainer()
+
+    tokens = search_space.generate_token()
+    samples = controller.generate_sequence(tokens=tokens)
+    manual_samples = [[693, 606, 885, 890]]
+    architectures = search_space.create_models(samples=samples, model_input_shape=(128, 128, 3))
+    epoch_performance = trainer.train_models(samples=samples, architectures=architectures)

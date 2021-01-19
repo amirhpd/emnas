@@ -1,5 +1,5 @@
 """
-search_space
+Search Space
 creates different possibilities of NN as a dict of tokens and layer info
 translates a sequence of tokens to layer info
 converts a token sequence to keras model
@@ -8,6 +8,7 @@ from keras import optimizers
 from keras.models import Sequential
 import keras
 import itertools
+from typing import List, Dict, Tuple
 
 
 class SearchSpace(object):
@@ -18,18 +19,18 @@ class SearchSpace(object):
         self.model_dropout = 0.2
         self.model_loss_function = "categorical_crossentropy"
         self.model_optimizer = "Adam"
-        self.model_lr = 0.01
+        self.model_lr = 0.001
         self.model_decay = 0.0
         self.metrics = ["accuracy"]
 
-    def generate_token(self):
-        nodes = [8, 16, 32, 64, 128, 256]
+    def generate_token(self) -> Dict:
+        nodes = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40]
         layers = ["Conv2D", "DepthwiseConv2D"]
-        filters = [8, 16, 24, 32, 40, 48]
+        filters = [8, 16, 24, 32, 40]
         kernel_sizes = [(1, 1), (2, 2), (3, 3)]
         strides = [(1, 1), (2, 2), (3, 3)]
         paddings = ["valid", "same"]
-        activations = ["sigmoid", "tanh", "relu", "elu"]
+        activations = ["sigmoid", "tanh", "relu"]
 
         # keys as int
         cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
@@ -40,7 +41,7 @@ class SearchSpace(object):
         dense_count = range(cnn_count[-1]+1, cnn_count[-1] + len(dense_params)+1)
         dense_token = dict(zip(dense_count, dense_params))
 
-        dense_token[dense_count[-1]+1] = "dropout"
+        dense_token[dense_count[-1]+1] = ("dropout", self.model_dropout)
         if self.model_output_shape == 1:
             dense_token[dense_count[-1]+2] = (1, "sigmoid")
         else:
@@ -85,7 +86,7 @@ class SearchSpace(object):
                                                    padding=layers_info[0][4], activation=layers_info[0][5],
                                                    input_shape=model_input_shape))
         else:
-            raise ValueError("Layer Type Unknown")
+            raise ValueError(f"emnas: Layer Type Unknown {str(layers_info[0])}")
 
         flatten_flag = False
         for layer in layers_info[1:-1]:
@@ -101,9 +102,14 @@ class SearchSpace(object):
                     flatten_flag = True
 
                 model.add(keras.layers.Dense(units=layer[1], activation=layer[2]))
+            elif layer[0] == "dropout":
+                model.add(keras.layers.Dropout(rate=layer[1]))
             else:
-                raise ValueError("Layer Type Unknown")
+                raise ValueError(f"emnas: Layer Type Unknown {str(layer)}")
 
+        if not flatten_flag:
+            model.add(keras.layers.Flatten())
+            flatten_flag = True
         model.add(keras.layers.Dense(units=layers_info[-1][0], activation=layers_info[-1][1]))
 
         if self.model_output_shape == 1:
@@ -112,3 +118,10 @@ class SearchSpace(object):
         model.compile(loss=self.model_loss_function, optimizer=optimizer, metrics=self.metrics)
 
         return model
+
+    def create_models(self, samples: List, model_input_shape: Tuple) -> List:
+        architectures = []
+        for sequence in samples:
+            architecture = self.create_model(sequence=sequence, model_input_shape=model_input_shape)
+            architectures.append(architecture)
+        return architectures

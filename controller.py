@@ -1,5 +1,5 @@
 """
-controller
+Search Strategy
 generates sequences of token keys, based on lstm predictor
 """
 import os
@@ -9,11 +9,10 @@ import numpy as np
 
 class Controller(object):
 
-    def __init__(self, search_space_length):
+    def __init__(self):
         self.no_of_samples = 10
         self.max_no_of_layers = 4
         self.rnn_dim = 100
-        self.rnn_classes = search_space_length
         self.rnn_optimizer = "Adam"
         self.rnn_lr = 0.01
         self.rnn_decay = 0.1
@@ -21,10 +20,12 @@ class Controller(object):
         self.rnn_no_of_epochs = 10
         self.data = []
         self.samples = []
-        self.rnn_model = self.controller_rnn()
+        self.rnn_classes = 0
+        self.rnn_model = None
 
     def generate_sequence(self, tokens):
-        rnn = self.controller_rnn()
+        self.rnn_classes = len(tokens)
+        self.rnn_model = self.controller_rnn()
         token_keys = list(tokens.keys())
         dense_tokens = [x for x, y in tokens.items() if "Dense" in y]
 
@@ -34,10 +35,15 @@ class Controller(object):
             dense_flag = False
             j = 0
             while j < self.max_no_of_layers-1:
-                predictions = rnn.predict(sequence[:,:,:-1])[0][0]  # predict on layers, leave out_layer for rnn_y
+                predictions = self.rnn_model.predict(sequence[:,:,:-1])[0][0]  # predict layers, leave out_layer for rnn_y
                 selected = np.random.choice(token_keys, p=predictions)
+                if j == 0 and (selected in dense_tokens or selected == token_keys[-1] or selected == token_keys[-2]):
+                    continue  # no dense, dropout, out_layer on first layer
+                # if j == self.max_no_of_layers-2 and selected not in dense_tokens:
+                #     continue  # at least one dense before out_layer
+                # if selected == token_keys[-1] and sequence[0][0][j-1] in dense_tokens:
                 if selected == token_keys[-1]:
-                    break  # finish the sequence if out_layer is predicted
+                    break  # finish the sequence if out_layer is predicted and there is at least one dense
                 if selected in dense_tokens:
                     dense_flag = True
                 if dense_flag and selected not in dense_tokens:
