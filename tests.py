@@ -39,12 +39,26 @@ def test_controller():
 
 
 def test_trainer():
-    search_space = SearchSpace(model_output_shape=1)
-    controller = Controller()
+    search_space = SearchSpace(model_output_shape=2)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
     trainer = Trainer()
 
-    tokens = search_space.generate_token()
-    samples = controller.generate_sequence(tokens=tokens)
-    manual_samples = [[693, 606, 885, 890]]
+    samples = controller.generate_sequence()
     architectures = search_space.create_models(samples=samples, model_input_shape=(128, 128, 3))
     epoch_performance = trainer.train_models(samples=samples, architectures=architectures)
+    assert len(epoch_performance) == 0
+
+
+def test_rnn_trainer():
+    search_space = SearchSpace(model_output_shape=2)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+    samples = controller.generate_sequence()
+    manual_epoch_performance = [[[91, 572], 0.6736111044883728],
+                                [[466, 262, 372, 85, 52, 572], 0.4930555522441864],
+                                [[360, 153, 307, 390, 473, 572], 0.5069444179534912]]
+
+    for i in range(5):
+        controller.train_controller_rnn(epoch_performance=manual_epoch_performance)
+        a = 0

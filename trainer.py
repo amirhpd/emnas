@@ -11,11 +11,10 @@ class Trainer(object):
         self.dataset_path = "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678"
         self.model_validation_split = 0.1
         self.model_batch_size = 10
-        self.model_epochs = 3
+        self.model_epochs = 1
         self.verbose = 1
         self.train_batch = None
         self.validation_batch = None
-        self.epoch_performance = []
         self.read_dataset()
 
     def read_dataset(self):
@@ -30,13 +29,14 @@ class Trainer(object):
                                                                    shuffle=False)
 
     def train_models(self, samples, architectures):
+        epoch_performance = []
         for i, model in enumerate(architectures):
             print(samples[i])
-            print(model.summary())
-            history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch),
+            # print(model.summary())
+            history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch)/4,
                                 validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
                                 epochs=self.model_epochs, verbose=self.verbose)
 
-            self.epoch_performance.append([samples[i], history.history['val_accuracy'][0]])
+            epoch_performance.append([samples[i], history.history['val_accuracy'][0]])
 
-        return self.epoch_performance
+        return epoch_performance
