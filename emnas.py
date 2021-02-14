@@ -4,6 +4,7 @@ from trainer import Trainer
 import time
 
 if __name__ == '__main__':
+    no_of_nas_epochs = 4
     t1 = time.time()
     search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
@@ -11,9 +12,9 @@ if __name__ == '__main__':
     trainer = Trainer()
 
     bests = []
-    for nas_epoch in range(4):
-        print(f"NAS epoch {nas_epoch+1} ----------")
-        samples = controller.generate_sequence()
+    for nas_epoch in range(no_of_nas_epochs):
+        print(f"NAS epoch {nas_epoch+1}/{no_of_nas_epochs} ----------")
+        samples = controller.generate_sequence_random_predict()
         architectures = search_space.create_models(samples=samples, model_input_shape=(128, 128, 3))
         print("Candidates:")
         print(samples)
@@ -23,8 +24,6 @@ if __name__ == '__main__':
         bests.append(best_of_epoch)
         print("Best architecture:")
         print(best_of_epoch)
-        print("Training controller ----------")
-        controller.train_controller_rnn(epoch_performance=epoch_performance)
         print("---------------------------------------------")
         print("---------------------------------------------")
 

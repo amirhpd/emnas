@@ -2,6 +2,7 @@
 Performance Estimation Strategy
 trains the architectures created in search_space
 """
+from typing import List
 import keras
 
 
@@ -12,7 +13,7 @@ class Trainer(object):
         self.model_validation_split = 0.1
         self.model_batch_size = 10
         self.model_epochs = 1
-        self.verbose = 1
+        self.verbose = 0
         self.train_batch = None
         self.validation_batch = None
         self.read_dataset()
@@ -28,10 +29,10 @@ class Trainer(object):
                                                                    subset='validation',
                                                                    shuffle=False)
 
-    def train_models(self, samples, architectures):
+    def train_models(self, samples: List[List[int]], architectures: List[keras.models.Sequential]):
         epoch_performance = []
         for i, model in enumerate(architectures):
-            print(samples[i])
+            # print(samples[i])
             # print(model.summary())
             history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch)/4,
                                 validation_data=self.validation_batch, validation_steps=len(self.validation_batch),

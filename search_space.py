@@ -47,23 +47,6 @@ class SearchSpace(object):
         else:
             dense_token[dense_count[-1]+2] = (self.model_output_shape, "softmax")
 
-        # keys as str
-        # cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
-        # cnn_count = range(1, len(cnn_params)+1)
-        # cnn_keys = [f"c{i}" for i in cnn_count]
-        # cnn_token = dict(zip(cnn_keys, cnn_params))
-        #
-        # dense_params = list(itertools.product(*[["Dense"], nodes, activations]))
-        # dense_count = range(1, len(dense_params)+1)
-        # dense_keys = [f"d{i}" for i in dense_count]
-        # dense_token = dict(zip(dense_keys, dense_params))
-        #
-        # dense_token["drp"] = "dropout"
-        # if self.model_output_shape == 1:
-        #     dense_token["out"] = (1, "sigmoid")
-        # else:
-        #     dense_token["out"] = (self.model_output_shape, "softmax")
-
         return {**cnn_token, **dense_token}
 
     def translate_sequence(self, sequence):
@@ -74,7 +57,7 @@ class SearchSpace(object):
             translated.append(layer_info)
         return translated
 
-    def create_model(self, sequence, model_input_shape):
+    def create_model(self, sequence: List[int], model_input_shape: Tuple) -> Sequential:
         layers_info = self.translate_sequence(sequence)
         model = Sequential()
         if layers_info[0][0] == "Conv2D":
