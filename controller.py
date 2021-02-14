@@ -5,6 +5,7 @@ generates sequences of token keys, based on lstm predictor
 import os
 import keras
 import numpy as np
+import pandas as pd
 
 
 class Controller(object):
@@ -17,18 +18,19 @@ class Controller(object):
         self.rnn_lr = 0.01
         self.rnn_decay = 0.1
         self.rnn_weights = 'logs/rnn_weights.h5'
+        self.rnn_dataset = 'logs/rnn_dataset.csv'
+        self.record_rnn_weights = False
         self.rnn_no_of_epochs = 10
         self.rnn_loss_alpha = 0.9
-        self.rl_baseline = 0.5
+        self.rl_baseline = 0.7
         self.verbose = 1
         self.epoch_performance = []
-        self.samples = []
         self.tokens = tokens
         self.rnn_classes = len(tokens)
         self.rnn_model = self.controller_rnn()
 
     def generate_sequence(self):
-        self.samples = []
+        samples = []
         token_keys = list(self.tokens.keys())
         dense_tokens = [x for x, y in self.tokens.items() if "Dense" in y]
 
@@ -48,17 +50,18 @@ class Controller(object):
                     dense_flag = True
                 if dense_flag and selected not in dense_tokens:
                     continue  # avoid conv layer after dense layer
+                # print("p:", np.argmax(predictions), "s:", selected)
                 sequence[0][0][j] = selected
                 j += 1
 
             sequence[0][0][self.max_no_of_layers-1] = token_keys[-1]  # last layer: out layer
             sequence = sequence[sequence != 0][np.newaxis][np.newaxis]  # drop zeros if terminated earlier
             sequence = sequence.astype(int)[0][0].tolist()
-            if sequence in self.samples:
+            if sequence in samples:
                 continue  # no repeated sequence in samples
-            self.samples.append(sequence)
+            samples.append(sequence)
             i += 1
-        return self.samples
+        return samples
 
     def controller_rnn(self):
         controller_input_shape = (None, self.max_no_of_layers-1)
@@ -70,29 +73,34 @@ class Controller(object):
 
     def train_controller_rnn(self, epoch_performance):
         self.epoch_performance = epoch_performance
+        samples = [i[0] for i in epoch_performance]
         # rnn_x = np.array(self.samples)[:, :-1]
-        rnn_x = np.array([i+[None]*(max(map(len, self.samples))-len(i)) for i in self.samples])[:, :-1]
+        rnn_x = np.array([i+[0]*(max(map(len, samples))-len(i)) for i in samples])[:, :-1]
         rnn_x = rnn_x.reshape(rnn_x.shape[0], 1, rnn_x.shape[1])
         # rnn_y = np.array(self.samples)[:, -1]
-        rnn_y = np.array([i[-1] for i in self.samples])  # to handle sequences smaller than max_length
+        rnn_y = np.array([i[-1] for i in samples])  # to handle sequences smaller than max_length
         rnn_y = keras.utils.to_categorical(rnn_y-1, self.rnn_classes)  # -1: 0 index, but token starts from 1
+
+        rewards = np.array([round(i[1] - self.rl_baseline, 4) for i in self.epoch_performance])[np.newaxis].T
 
         optimizer = getattr(keras.optimizers, self.rnn_optimizer)(lr=self.rnn_lr,
                                                                   decay=self.rnn_decay, clipnorm=1.0)
         self.rnn_model.compile(optimizer=optimizer, loss={'main_output': self.reinforce})
         # self.rnn_model.compile(optimizer=optimizer, loss="mse")
-        # if os.path.exists(self.rnn_weights):
-        #     self.rnn_model.load_weights(self.rnn_weights)
+        if self.record_rnn_weights:
+            if os.path.exists(self.rnn_weights):
+                self.rnn_model.load_weights(self.rnn_weights)
 
         self.rnn_model.fit({'main_input': rnn_x},
                            {'main_output': rnn_y.reshape(len(rnn_y), 1, self.rnn_classes)},
                            epochs=self.rnn_no_of_epochs,
-                           batch_size=len(self.epoch_performance),
+                           batch_size=int(len(self.epoch_performance)/1),
                            verbose=self.verbose)
 
-        # if not os.path.exists(self.rnn_weights):
-        #     os.mknod(self.rnn_weights)
-        # self.rnn_model.save_weights(self.rnn_weights)
+        if self.record_rnn_weights:
+            if not os.path.exists(self.rnn_weights):
+                os.mknod(self.rnn_weights)
+            self.rnn_model.save_weights(self.rnn_weights)
 
     def reinforce(self, target, output):
         rewards = np.array([round(i[1] - self.rl_baseline, 4) for i in self.epoch_performance])[np.newaxis].T
@@ -111,3 +119,12 @@ class Controller(object):
             discounted_r[t] = running_add
         discounted_r = (discounted_r - discounted_r.mean()) / discounted_r.std()
         return discounted_r
+
+    def save_rnn_dataset(self):
+        if not os.path.exists(self.rnn_dataset):
+            rnn_dataset = pd.DataFrame(columns=["sequence", "val_accuracy"])
+        else:
+            rnn_dataset = pd.read_csv(self.rnn_dataset)
+        epoch_data = pd.DataFrame(np.array(self.epoch_performance), columns=["sequence", "val_accuracy"])
+        rnn_dataset = pd.concat([rnn_dataset, epoch_data])
+        rnn_dataset.to_csv(self.rnn_dataset, index=False)

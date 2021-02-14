@@ -59,6 +59,29 @@ def test_rnn_trainer():
                                 [[466, 262, 372, 85, 52, 572], 0.4930555522441864],
                                 [[360, 153, 307, 390, 473, 572], 0.5069444179534912]]
 
-    for i in range(5):
-        controller.train_controller_rnn(epoch_performance=manual_epoch_performance)
-        a = 0
+    controller.train_controller_rnn(epoch_performance=manual_epoch_performance)
+
+
+def test_rnn_performance():
+    manipulated_epoch_performance = []
+    for i in range(100):
+        seq = np.random.randint(low=200, high=571, size=9).tolist() + [572]
+        acc = np.random.uniform(0.71, 0.999)
+        sample = [seq, acc]
+        manipulated_epoch_performance.append(sample)
+    for j in range(1000):
+        seq = np.random.randint(low=1, high=571, size=9).tolist() + [572]
+        acc = np.random.uniform(0.510, 0.999)
+        sample = [seq, acc]
+        manipulated_epoch_performance.append(sample)
+
+    search_space = SearchSpace(model_output_shape=2)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+
+    samples_before_train = controller.generate_sequence()
+    controller.train_controller_rnn(epoch_performance=manipulated_epoch_performance)
+    samples_after_train = controller.generate_sequence()
+    print(samples_before_train)
+    print(samples_after_train)
+
