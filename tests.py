@@ -1,6 +1,7 @@
 import keras
 import numpy as np
 from controller import Controller
+from emnas import plot_image, save_logs
 from search_space import SearchSpace
 from trainer import Trainer
 
@@ -20,24 +21,6 @@ def test_search_space():
     assert len(token) == 890
 
 
-def test_controller():
-    controller = Controller()
-    search_space = SearchSpace(model_output_shape=1)
-    tokens = search_space.generate_token()
-
-    model = controller.controller_rnn()
-    dummy_rnn_input = np.array([[[0, 8, 0, 4]]])  # shape:(1, 1, 4)
-    prd = model.predict(dummy_rnn_input)
-    assert prd.shape == (1, 1, 890)
-
-    samples = controller.generate_sequence(tokens=tokens)
-    architecture = search_space.create_model(sequence=samples[0], model_input_shape=(128, 128, 3))
-    print(architecture.summary())
-    assert len(samples) == 10
-
-    controller.train_controller_rnn(0)
-
-
 def test_trainer():
     search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
@@ -50,38 +33,49 @@ def test_trainer():
     assert len(epoch_performance) == 0
 
 
-def test_rnn_trainer():
+def test_controller_rnn_trainer():
     search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
     samples = controller.generate_sequence()
-    manual_epoch_performance = [[[91, 572], 0.6736111044883728],
-                                [[466, 262, 372, 85, 52, 572], 0.4930555522441864],
-                                [[360, 153, 307, 390, 473, 572], 0.5069444179534912]]
+    manual_epoch_performance = {
+        (466, 262, 372, 85, 52, 572): 0.4930555522441864,
+        (360, 153, 307, 390, 473, 572): 0.5069444179534912,
+        (315, 476, 563, 565, 560, 572): 0.8032407164573669,
+        (318, 291, 20, 326, 161, 572): 0.8055555820465088
+    }
 
-    controller.train_controller_rnn(epoch_performance=manual_epoch_performance)
+    loss_avg = controller.train_controller_rnn(epoch_performance=manual_epoch_performance)
+    print(loss_avg)
 
 
-def test_rnn_performance():
-    manipulated_epoch_performance = []
-    for i in range(100):
-        seq = np.random.randint(low=200, high=571, size=9).tolist() + [572]
-        acc = np.random.uniform(0.71, 0.999)
-        sample = [seq, acc]
-        manipulated_epoch_performance.append(sample)
-    for j in range(1000):
-        seq = np.random.randint(low=1, high=571, size=9).tolist() + [572]
-        acc = np.random.uniform(0.510, 0.999)
-        sample = [seq, acc]
-        manipulated_epoch_performance.append(sample)
-
+def test_controller_sample_generator():
     search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
+    samples = controller.generate_sequence()
+    print(samples)
 
-    samples_before_train = controller.generate_sequence()
-    controller.train_controller_rnn(epoch_performance=manipulated_epoch_performance)
-    samples_after_train = controller.generate_sequence()
-    print(samples_before_train)
-    print(samples_after_train)
 
+def test_plot_image_logs():
+    history_lstm_loss = [2.570976454421725e-05, -4.0828806140780216e-06, 2.319243887882294e-05, 1.2543778396789662e-05,
+                         -1.1891249442612662e-05, -1.734991667262875e-05, 1.366215491316325e-07, 1.676019123806327e-05,
+                         1.005385006465076e-06, -9.377887454320444e-07]
+    history_avg_acc = [0.724, 0.651, 0.686, 0.688, 0.641, 0.723, 0.667, 0.667, 0.761, 0.669]
+    history_result = {
+        (468, 38, 248, 544, 558, 572): 0.7662037014961243,
+        (467, 17, 20, 292, 483, 572): 0.5069444179534912,
+        (12, 99, 378, 420, 246, 572): 0.7916666865348816,
+        (151, 143, 482, 282, 131, 572): 0.7569444179534912,
+        (259, 304, 97, 491, 358, 572): 0.5069444179534912,
+        (355, 118, 479, 307, 373, 572): 0.4930555522441864
+    }
+    best_model = [
+        [('DepthwiseConv2D', 16, (1, 1), (1, 1), 'same', 'tanh'),
+         ('Conv2D', 40, (3, 3), (2, 2), 'valid', 'tanh'),
+         ('Conv2D', 32, (1, 1), (2, 2), 'valid', 'relu'),
+         ('Conv2D', 40, (1, 1), (1, 1), 'same', 'tanh'),
+         ('DepthwiseConv2D', 24, (2, 2), (1, 1), 'same', 'tanh'), (2, 'softmax')],
+        0.8402777910232544]
+    img = plot_image(history_lstm_loss, history_avg_acc, history_result)
+    save_logs(history_lstm_loss, history_avg_acc, history_result, best_model, img)

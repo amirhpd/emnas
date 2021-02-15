@@ -9,6 +9,7 @@ from keras.models import Sequential
 import keras
 import itertools
 from typing import List, Dict, Tuple
+import config
 
 
 class SearchSpace(object):
@@ -16,12 +17,12 @@ class SearchSpace(object):
     def __init__(self, model_output_shape):
 
         self.model_output_shape = model_output_shape
-        self.model_dropout = 0.2
-        self.model_loss_function = "categorical_crossentropy"
-        self.model_optimizer = "Adam"
-        self.model_lr = 0.001
-        self.model_decay = 0.0
-        self.metrics = ["accuracy"]
+        self.model_dropout = config.search_space["model_dropout"]
+        self.model_loss_function = config.search_space["model_loss_function"]
+        self.model_optimizer = config.search_space["model_optimizer"]
+        self.model_lr = config.search_space["model_lr"]
+        self.model_decay = config.search_space["model_decay"]
+        self.model_metrics = config.search_space["model_metrics"]
 
     def generate_token(self) -> Dict:
         nodes = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40]
@@ -46,23 +47,6 @@ class SearchSpace(object):
             dense_token[dense_count[-1]+2] = (1, "sigmoid")
         else:
             dense_token[dense_count[-1]+2] = (self.model_output_shape, "softmax")
-
-        # keys as str
-        # cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
-        # cnn_count = range(1, len(cnn_params)+1)
-        # cnn_keys = [f"c{i}" for i in cnn_count]
-        # cnn_token = dict(zip(cnn_keys, cnn_params))
-        #
-        # dense_params = list(itertools.product(*[["Dense"], nodes, activations]))
-        # dense_count = range(1, len(dense_params)+1)
-        # dense_keys = [f"d{i}" for i in dense_count]
-        # dense_token = dict(zip(dense_keys, dense_params))
-        #
-        # dense_token["drp"] = "dropout"
-        # if self.model_output_shape == 1:
-        #     dense_token["out"] = (1, "sigmoid")
-        # else:
-        #     dense_token["out"] = (self.model_output_shape, "softmax")
 
         return {**cnn_token, **dense_token}
 
@@ -115,7 +99,7 @@ class SearchSpace(object):
         if self.model_output_shape == 1:
             self.model_loss_function = "binary_crossentropy"
         optimizer = getattr(optimizers, self.model_optimizer)(lr=self.model_lr, decay=self.model_decay)
-        model.compile(loss=self.model_loss_function, optimizer=optimizer, metrics=self.metrics)
+        model.compile(loss=self.model_loss_function, optimizer=optimizer, metrics=self.model_metrics)
 
         return model
 

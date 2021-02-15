@@ -3,16 +3,17 @@ Performance Estimation Strategy
 trains the architectures created in search_space
 """
 import keras
+import config
 
 
 class Trainer(object):
 
     def __init__(self):
-        self.dataset_path = "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678"
-        self.model_validation_split = 0.1
-        self.model_batch_size = 10
-        self.model_epochs = 1
-        self.verbose = 1
+        self.dataset_path = config.trainer["dataset_path"]
+        self.model_validation_split = config.trainer["model_validation_split"]
+        self.model_batch_size = config.trainer["model_batch_size"]
+        self.model_epochs = config.trainer["model_epochs"]
+        self.verbose = config.trainer["verbose"]
         self.train_batch = None
         self.validation_batch = None
         self.read_dataset()
@@ -29,14 +30,15 @@ class Trainer(object):
                                                                    shuffle=False)
 
     def train_models(self, samples, architectures):
-        epoch_performance = []
+        epoch_performance = {}
         for i, model in enumerate(architectures):
-            print(samples[i])
-            # print(model.summary())
             history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch)/4,
                                 validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
                                 epochs=self.model_epochs, verbose=self.verbose)
 
-            epoch_performance.append([samples[i], history.history['val_accuracy'][0]])
+            acc = history.history['val_accuracy'][0]
+            print("Sequence:", samples[i], "Accuracy:", acc)
+            # epoch_performance.append([samples[i], acc])
+            epoch_performance[tuple(samples[i])] = acc
 
         return epoch_performance
