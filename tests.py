@@ -57,6 +57,20 @@ def test_controller_sample_generator():
     print(samples)
 
 
+def test_controller_generate_sequence_naive():
+    search_space = SearchSpace(model_output_shape=2)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+
+    samples = controller.generate_sequence_naive(mode="b")
+    for sequence in samples:
+        sequence_ = sequence
+        print(sequence_)
+
+    sequences_random = controller.generate_sequence_naive(mode="r")
+    print(samples)
+
+
 def test_plot_image_logs():
     history_lstm_loss = [2.570976454421725e-05, -4.0828806140780216e-06, 2.319243887882294e-05, 1.2543778396789662e-05,
                          -1.1891249442612662e-05, -1.734991667262875e-05, 1.366215491316325e-07, 1.676019123806327e-05,
@@ -77,5 +91,11 @@ def test_plot_image_logs():
          ('Conv2D', 40, (1, 1), (1, 1), 'same', 'tanh'),
          ('DepthwiseConv2D', 24, (2, 2), (1, 1), 'same', 'tanh'), (2, 'softmax')],
         0.8402777910232544]
-    img = plot_image(history_lstm_loss, history_avg_acc, history_result)
-    save_logs(history_lstm_loss, history_avg_acc, history_result, best_model, img)
+
+    #  rnn
+    # img = plot_image(history_lstm_loss, history_avg_acc, history_result)
+    # save_logs(history_lstm_loss, history_avg_acc, history_result, best_model, img)
+
+    #  naive
+    img = plot_image(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result)
+    save_logs(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result, final_result=best_model, image=img)

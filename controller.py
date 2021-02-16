@@ -2,6 +2,7 @@
 Search Strategy
 generates sequences of token keys, based on lstm predictor
 """
+import itertools
 import keras
 import numpy as np
 import config
@@ -102,3 +103,37 @@ class Controller(object):
         if len(rewards) > 1:
             discounted_reward = (discounted_reward - discounted_reward.mean()) / discounted_reward.std()
         return discounted_reward
+
+    def generate_sequence_naive(self, mode: str):
+        if mode == "b":  # Brute-force
+            token_keys = list(self.tokens.keys())
+            space = itertools.permutations(token_keys, self.no_of_layers-1)
+            return space
+        if mode == "r":  # Random
+            sequence = []
+            token_keys = list(self.tokens.keys())
+            for i in range(self.no_of_layers-1):
+                token = np.random.choice(token_keys)
+                sequence.append(token)
+            return sequence
+
+    def check_sequence(self, sequence):
+        token_keys = list(self.tokens.keys())
+        dense_tokens = [x for x, y in self.tokens.items() if "Dense" in y]
+
+        dense_flag = False
+        for i, token in enumerate(sequence):
+            if i == 0 and (token in dense_tokens or token == token_keys[-1] or token == token_keys[-2]):
+                return False
+            if i != len(sequence)-1 and token == token_keys[-1]:
+                return False
+            if i == len(sequence)-1 and token != token_keys[-1]:
+                return False
+            if token in dense_tokens:
+                dense_flag = True
+            if dense_flag and i != len(sequence)-1 and token not in dense_tokens:
+                return False
+
+        if not len(sequence):
+            return False
+        return True

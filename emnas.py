@@ -10,9 +10,13 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 
+save_log = True
 no_of_nas_epochs = config.emnas["no_of_nas_epochs"]
 model_output_shape = config.emnas["model_output_shape"]
 model_input_shape = config.emnas["model_input_shape"]
+search_mode = config.emnas["search_mode"]
+naive_threshold = config.emnas["naive_threshold"]
+naive_timeout = config.emnas["naive_timeout"]
 
 
 def plot_image(all_lstm_loss, all_avg_acc, all_result):
@@ -31,7 +35,7 @@ def plot_image(all_lstm_loss, all_avg_acc, all_result):
     all_acc = list(all_result.values())
     ax3.plot(np.arange(0, len(all_acc)), all_acc)
     ax3.axhline(y=np.average(all_acc), c="g")
-    ax3.set_title("All Accuracies")
+    ax3.set_title(f"All Accuracies ({search_mode})")
     ax3.set_xlabel("Sequences")
     ax3.set_ylim([0, 1])
     ax3.grid()
@@ -39,33 +43,34 @@ def plot_image(all_lstm_loss, all_avg_acc, all_result):
     return plt
 
 
-def save_logs(all_lstm_loss, all_avg_acc, all_result, best_model, image):
-    name = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    path = "/home/amirhossein/Codes/NAS/emnas/logs/" + name
-    os.mkdir(path)
+def save_logs(all_lstm_loss, all_avg_acc, all_result, final_result, image):
+    time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    path = f"/home/amirhossein/Codes/NAS/emnas/logs/{time_str}_{search_mode}"
 
-    with open(path+"/lstm_loss.txt", "w") as output:
-        output.write(str(all_lstm_loss))
-    with open(path+"/avg_acc.txt", "w") as output:
-        output.write(str(all_avg_acc))
-    with open(path+"/results.txt", "w") as output:
-        output.write(str(all_result))
-    with open(path+"/best_model.txt", "w") as output:
-        output.write(str(best_model))
-    with open(path+"/config.txt", "w") as output:
-        output.write(str(config.emnas))
-        output.write("\n")
-        output.write(str(config.controller))
-        output.write("\n")
-        output.write(str(config.trainer))
-        output.write("\n")
-        output.write(str(config.search_space))
+    if save_log:
+        os.mkdir(path)
+        with open(path+"/lstm_loss.txt", "w") as output:
+            output.write(str(all_lstm_loss))
+        with open(path+"/avg_acc.txt", "w") as output:
+            output.write(str(all_avg_acc))
+        with open(path+"/results.txt", "w") as output:
+            output.write(str(all_result))
+        with open(path+"/final_info.txt", "w") as output:
+            output.write(str(final_result))
+        with open(path+"/config.txt", "w") as output:
+            output.write(str(config.emnas))
+            output.write("\n")
+            output.write(str(config.controller))
+            output.write("\n")
+            output.write(str(config.trainer))
+            output.write("\n")
+            output.write(str(config.search_space))
 
-    image.savefig(path+"/graphs.png")
+        image.savefig(path+"/graphs.png")
     image.show()
 
 
-if __name__ == '__main__':
+def main_rnn():
     t1 = time.time()
     search_space = SearchSpace(model_output_shape=model_output_shape)
     tokens = search_space.generate_token()
@@ -94,14 +99,86 @@ if __name__ == '__main__':
         print("---------------------------------------------")
         print("---------------------------------------------")
 
+    t2 = round(time.time() - t1, 2)
     best = max(history_result, key=history_result.get)
     best_translated = search_space.translate_sequence(best)
-    best_info = [best_translated, history_result[best]]
+    acc_average = np.average(list(history_result.values()))
+    final_info = [best_translated, history_result[best], acc_average, t2]
+
+    img = plot_image(all_lstm_loss=history_lstm_loss, all_avg_acc=history_avg_acc, all_result=history_result)
+    save_logs(history_lstm_loss, history_avg_acc, history_result, final_info, img)
+
     print("Best architecture:")
-    print(best_info[0])
-    print("With accuracy:", best_info[1])
-    print(f"NAS done in {round(time.time() - t1, 2)}s")
-    img = plot_image(history_lstm_loss, history_avg_acc, history_result)
-    save_logs(history_lstm_loss, history_avg_acc, history_result, best_info, img)
+    print(final_info[0])
+    print("With accuracy:", final_info[1])
+    print("Total average accuracy:", acc_average)
+    print(f"NAS done in {t2}s")
 
 
+def main_naive():
+    t1 = time.time()
+    search_space = SearchSpace(model_output_shape=model_output_shape)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+    trainer = Trainer()
+    result = None
+    history_result = {}
+    cnt_valid = 1
+    cnt_skip = 1
+
+    if search_mode == "bruteforce":
+        space = controller.generate_sequence_naive(mode="b")
+        for sequence in space:
+            sequence = sequence + (list(tokens.keys())[-1],)  # add last layer
+            if not controller.check_sequence(sequence):
+                cnt_skip += 1
+                continue
+            cnt_valid += 1
+            architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
+            epoch_performance = trainer.train_models(samples=[sequence], architectures=[architecture])
+            history_result.update(epoch_performance)
+            if list(epoch_performance.values())[0] >= naive_threshold:
+                result = epoch_performance
+                break
+
+    if search_mode == "random":
+        watchdog = 0
+        while watchdog < naive_timeout:
+            watchdog += 1
+            sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
+            if (tuple(sequence) in list(history_result.keys())) or (not controller.check_sequence(sequence)):
+                cnt_skip += 1
+                continue
+            cnt_valid += 1
+            architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
+            epoch_performance = trainer.train_models(samples=[sequence], architectures=[architecture])
+            history_result.update(epoch_performance)
+            if list(epoch_performance.values())[0] >= naive_threshold:
+                result = epoch_performance
+                break
+
+    t2 = round(time.time() - t1, 2)
+    best_translated = search_space.translate_sequence(list(result.keys())[0])
+    if result:
+        print("Found architecture:")
+        print(best_translated)
+        print(f"With accuracy: {list(result.values())[0]} after checking {cnt_valid} sequences and skipping {cnt_skip} sequences.")
+        print(f"DONE (t:{t2})")
+    else:
+        print(f"No architecture with accuracy >= {naive_threshold} found.")
+        print(f"DONE (t:{t2})")
+
+    acc_average = np.average(list(history_result.values()))
+    final_info = [best_translated, list(result.values())[0], acc_average, t2, cnt_valid, cnt_skip]
+
+    img = plot_image(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result)
+    save_logs(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result, final_result=final_info, image=img)
+
+
+if __name__ == '__main__':
+    save_log = True
+    print("MODE:", search_mode)
+    if search_mode == "rnn":
+        main_rnn()
+    else:
+        main_naive()

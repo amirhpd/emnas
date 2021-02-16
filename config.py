@@ -14,9 +14,9 @@ trainer = {
     "verbose": 0,
 }
 controller = {
-    "no_of_samples_per_epoch": 5,
+    "no_of_samples_per_epoch": 10,
     "no_of_layers": 6,
-    "rnn_dim": 200,
+    "rnn_dim": 100,
     "rnn_lr": 0.01,
     "rnn_decay": 0.1,
     "rnn_no_of_epochs": 200,
@@ -25,7 +25,10 @@ controller = {
     "verbose": 0,
 }
 emnas = {
-    "no_of_nas_epochs": 20,
+    "no_of_nas_epochs": 10,
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
+    "search_mode": "rnn",  # rnn, random, bruteforce
+    "naive_threshold": 0.8,
+    "naive_timeout": 1e6,
 }
