@@ -5,6 +5,7 @@ import config
 import numpy as np
 import time
 import os
+import shutil
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
@@ -65,6 +66,7 @@ def save_logs(all_lstm_loss, all_avg_acc, all_result, final_result, image):
             output.write(str(config.trainer))
             output.write("\n")
             output.write(str(config.search_space))
+        shutil.copyfile("search_space.json", path+"/search_space.json")
 
         image.savefig(path+"/graphs.png")
     image.show()
