@@ -4,6 +4,7 @@ from controller import Controller
 from emnas import plot_image, save_logs
 from search_space import SearchSpace
 from trainer import Trainer
+from camera_drive import SipeedCamera
 
 
 def test_search_space():
@@ -62,13 +63,13 @@ def test_controller_generate_sequence_naive():
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
 
-    samples = controller.generate_sequence_naive(mode="b")
-    for sequence in samples:
-        sequence_ = sequence
-        print(sequence_)
+    # samples = controller.generate_sequence_naive(mode="b")
+    # for sequence in samples:
+    #     sequence_ = sequence
+    #     print(sequence_)
 
     sequences_random = controller.generate_sequence_naive(mode="r")
-    print(samples)
+    print(sequences_random)
 
 
 def test_plot_image_logs():
@@ -99,3 +100,9 @@ def test_plot_image_logs():
     #  naive
     img = plot_image(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result)
     save_logs(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result, final_result=best_model, image=img)
+
+
+def test_sipeed_get_latency():
+    sipeed_cam = SipeedCamera()
+    latency = sipeed_cam.get_latency(model_file="model_6.kmodel")
+    print(latency)

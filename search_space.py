@@ -10,6 +10,7 @@ import keras
 import itertools
 from typing import List, Dict, Tuple
 import config
+import json
 
 
 class SearchSpace(object):
@@ -25,13 +26,14 @@ class SearchSpace(object):
         self.model_metrics = config.search_space["model_metrics"]
 
     def generate_token(self) -> Dict:
-        nodes = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40]
-        layers = ["Conv2D", "DepthwiseConv2D"]
-        filters = [8, 16, 24, 32, 40]
-        kernel_sizes = [(1, 1), (2, 2), (3, 3)]
-        strides = [(1, 1), (2, 2), (3, 3)]
-        paddings = ["valid", "same"]
-        activations = ["sigmoid", "tanh", "relu"]
+        ranges = json.load(open("search_space.json"))
+        nodes = ranges["nodes"]
+        layers = ranges["layers"]
+        filters = ranges["filters"]
+        paddings = ranges["paddings"]
+        activations = ranges["activations"]
+        kernel_sizes = [tuple(i) for i in ranges["kernel_sizes"]]
+        strides = [tuple(i) for i in ranges["strides"]]
 
         # keys as int
         cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
