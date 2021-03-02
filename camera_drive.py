@@ -67,6 +67,7 @@ class SipeedCamera(object):
 
     def convert_kmodel(self, path):
         h5_list = [i for i in os.listdir(path) if ".h5" in i]
+        h5_list.sort()
         df = pd.read_csv(f"{path}/table.csv")
 
         for h5 in h5_list:
@@ -84,9 +85,9 @@ class SipeedCamera(object):
                 pattern = re.compile(r"Working memory usage: (\d+)")  # number after a text
                 match = re.findall(pattern, str(terminal_out))
                 if len(match):
-                    kmodel_memory = int(match[0])
+                    kmodel_memory = round(int(match[0])/1000, 2)
                     kmodel_index = df[df["model"] == h5.split(".")[0]].index
-                    df.at[kmodel_index, "kmodel_memory [B]"] = kmodel_memory
+                    df.at[kmodel_index, "kmodel_memory [KB]"] = kmodel_memory
                 else:
                     print(f"Converting {file_path} failed.")
                 print(f"Converting {file_path} done.")
