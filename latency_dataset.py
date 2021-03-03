@@ -12,9 +12,9 @@ from controller import Controller
 from search_space import SearchSpace
 
 
-no_of_examples = 10
+no_of_examples = 1000
 kmodel_limit = 3847*1024
-latency_dataset = "latency_datasets/Dataset_2"
+latency_dataset = "latency_datasets/Dataset_3"
 model_input_shape = config.emnas["model_input_shape"]
 
 
@@ -33,7 +33,12 @@ def generate_models():
         sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]
         if (sequence in architectures) or (not controller.check_sequence(sequence)):
             continue
-        architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
+        try:
+            architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
+        except Exception as e:
+            print(sequence)
+            print(e)
+            continue
         architectures.append(architecture)
         i += 1
         i_str = format(i, f"0{len(str(no_of_examples))}d")  # add 0s
@@ -111,7 +116,7 @@ def measure_cpu_latency():
 
 
 if __name__ == '__main__':
-    step = 2
+    step = 1
     sipeed_cam = SipeedCamera()
 
     if step == 1:
