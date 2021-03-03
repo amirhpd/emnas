@@ -3,6 +3,7 @@ import config
 import time
 import random
 import numpy as np
+import json
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
@@ -11,9 +12,9 @@ from controller import Controller
 from search_space import SearchSpace
 
 
-no_of_examples = 10
+no_of_examples = 1000
 kmodel_limit = 3847*1024
-latency_dataset = "latency_datasets/Dataset_1"
+latency_dataset = "latency_datasets/Dataset_3"
 model_input_shape = config.emnas["model_input_shape"]
 
 
@@ -24,22 +25,30 @@ def generate_models():
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
     architectures = []
-    df = pd.DataFrame(columns=["model", "params", "sipeed_latency [ms]", "kmodel_memory [B]", "cpu_latency [ms]",
-                               "model_info"])
+    df = pd.DataFrame(columns=["model", "params [K]", "sipeed_latency [ms]", "kmodel_memory [KB]", "cpu_latency [ms]",
+                               "token_sequence", "model_info"])
 
     i = 0
     while i < no_of_examples:
         sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]
         if (sequence in architectures) or (not controller.check_sequence(sequence)):
             continue
-        architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
+        try:
+            architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
+        except Exception as e:
+            print(sequence)
+            print(e)
+            continue
         architectures.append(architecture)
         i += 1
-        file_name = f"model_{i}"
+        i_str = format(i, f"0{len(str(no_of_examples))}d")  # add 0s
+        file_name = f"model_{i_str}"
         architecture.save(f"{latency_dataset}/{file_name}.h5")
-        model_params = architecture.count_params()
+        model_params = round(architecture.count_params()/1000, 4)
         model_info = search_space.translate_sequence(sequence)
-        df = df.append({"model": file_name, "params": model_params, "model_info": model_info}, ignore_index=True)
+        model_info_json = json.dumps(dict(zip(range(len(model_info)), model_info)))
+        df = df.append({"model": file_name, "params [K]": model_params, "token_sequence": sequence,
+                        "model_info": model_info_json}, ignore_index=True)
 
     df.to_csv(f"{latency_dataset}/table.csv", index=False)
 
@@ -47,11 +56,12 @@ def generate_models():
 def measure_sipeed_latency():
     df = pd.read_csv(f"{latency_dataset}/table.csv")
     kmodel_list = [i for i in os.listdir(latency_dataset) if ".kmodel" in i]
+    kmodel_list.sort()
     for kmodel in kmodel_list:
         t1 = time.time()
         kmodel_name = kmodel.split(".")[0]
         kmodel_index = df[df["model"] == kmodel_name].index
-        kmodel_memory = df.loc[kmodel_index, "kmodel_memory [B]"].iloc[0]
+        kmodel_memory = df.loc[kmodel_index, "kmodel_memory [KB]"].iloc[0]
 
         if kmodel_memory < kmodel_limit:
             try:
@@ -83,6 +93,7 @@ def _get_test_images(no_of_images):
 def measure_cpu_latency():
     df = pd.read_csv(f"{latency_dataset}/table.csv")
     h5_list = [i for i in os.listdir(latency_dataset) if ".h5" in i]
+    h5_list.sort()
     images = _get_test_images(20)
 
     for h5 in h5_list:
@@ -105,22 +116,32 @@ def measure_cpu_latency():
 
 
 if __name__ == '__main__':
+    step = 1
     sipeed_cam = SipeedCamera()
-    t0 = time.time()
 
-    # Step 1
-    # generate_models()
-    # print("Model generation done.", time.time() - t0)
+    if step == 1:
+        # Step 1.1
+        print("Generating models ..")
+        t0 = time.time()
+        generate_models()
+        print("Model generation done.", round(time.time()-t0, 2), "s")
 
-    # Step 2
-    # sipeed_cam.convert_kmodel(latency_dataset)
-    # print("Kmodel conversion done.", time.time() - t0)
+        # Step 1.2
+        print("Converting models ..")
+        t0 = time.time()
+        sipeed_cam.convert_kmodel(latency_dataset)
+        print("Kmodel conversion done.", round(time.time()-t0, 2), "s")
 
-    # Step 3
-    # manually copy kmodel files to camera
-    # measure_sipeed_latency()
-    # print("Sipeed cam latency measurement done.", time.time() - t0)
+        # Step 1.3
+        print("Measuring CPU latency ..")
+        t0 = time.time()
+        measure_cpu_latency()
+        print("CPU latency measurement done.", round(time.time()-t0, 2), "s")
 
-    # Step 4
-    # measure_cpu_latency()
-    # print("CPU latency measurement done.", time.time() - t0)
+    if step == 2:
+        # Step 2
+        # manually copy kmodel files to camera
+        print("Measuring Sipeed latency ..")
+        t0 = time.time()
+        measure_sipeed_latency()
+        print("Sipeed cam latency measurement done.", round(time.time()-t0, 2), "s")
