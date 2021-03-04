@@ -28,7 +28,7 @@ emnas = {
     "no_of_nas_epochs": 10,
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
-    "search_mode": "rnn",  # rnn, random, bruteforce
+    "search_mode": "hill_climbing",  # rnn, random, bruteforce
     "naive_threshold": 0.8,
     "naive_timeout": 1e6,
 }

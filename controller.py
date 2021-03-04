@@ -117,6 +117,28 @@ class Controller(object):
                 sequence.append(token)
             return sequence
 
+    def generate_successors(self, sequence_):
+        sequence = sequence_[:-1]
+        first_token = list(self.tokens.keys())[0]
+        last_token = list(self.tokens.keys())[-3]
+        valid_range = range(first_token, last_token)
+
+        successors = []
+        for i in range(-5, 5):
+            new_sequence = []
+            for token in sequence:
+                new_token = token + i
+                if new_token > last_token:
+                    new_token = last_token
+                if new_token < first_token:
+                    new_token = first_token
+                new_sequence.append(new_token)
+
+            new_sequence.append(sequence_[-1])
+            successors.append(new_sequence)
+
+        return successors
+
     def check_sequence(self, sequence):
         token_keys = list(self.tokens.keys())
         dense_tokens = [x for x, y in self.tokens.items() if "Dense" in y]

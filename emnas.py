@@ -177,10 +177,70 @@ def main_naive():
     save_logs(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result, final_result=final_info, image=img)
 
 
+def _generate_init(history_result):
+    print("generating init ..")
+    search_space = SearchSpace(model_output_shape=model_output_shape)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+    trainer = Trainer()
+
+    while True:
+        init = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
+        if (tuple(init) in list(history_result.keys())) or (not controller.check_sequence(init)):
+            continue
+        init_architecture = search_space.create_model(sequence=init, model_input_shape=model_input_shape)
+        init_epoch_performance = trainer.train_models(samples=[init], architectures=[init_architecture])
+        if list(init_epoch_performance.values())[0] >= 0.7:
+            history_result.update(init_epoch_performance)
+            print("init:")
+            print(init_epoch_performance)
+            break
+
+    return init, history_result, init_epoch_performance
+
+
+def main_hill_climbing():
+    t1 = time.time()
+    search_space = SearchSpace(model_output_shape=model_output_shape)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+    trainer = Trainer()
+    history_result = {}
+    cnt_valid = 1
+    cnt_skip = 1
+
+    init, history_result, init_epoch_performance = _generate_init(history_result)
+
+    for i in range(10):
+        successors = controller.generate_successors(init)
+        winning_successor = 0
+        for successor in successors:
+            if (tuple(successor) in list(history_result.keys())) or (not controller.check_sequence(successor)):
+                cnt_skip += 1
+                continue
+            cnt_valid += 1
+            architecture = search_space.create_model(sequence=successor, model_input_shape=model_input_shape)
+            epoch_performance = trainer.train_models(samples=[successor], architectures=[architecture])
+            history_result.update(epoch_performance)
+            if list(epoch_performance.values())[0] >= list(init_epoch_performance.values())[0]:
+                print("winning successor:", epoch_performance)
+                init = successor
+                init_epoch_performance = epoch_performance
+                winning_successor = 1
+                break
+        if winning_successor == 0:
+            print("no winning successor")
+            init, history_result, init_epoch_performance = _generate_init(history_result)
+
+    print(history_result)
+
+
 if __name__ == '__main__':
     save_log = True
     print("MODE:", search_mode)
     if search_mode == "rnn":
         main_rnn()
+    elif search_mode == "hill_climbing":
+        main_hill_climbing()
     else:
         main_naive()

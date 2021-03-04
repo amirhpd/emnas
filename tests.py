@@ -117,3 +117,13 @@ def test_latency_predictor():
     architecture = search_space.create_model(sequence=sequence, model_input_shape=(128, 128, 3))
     latency_predictor.train()
     latency_predictor.inference(sequence=sequence, architecture=architecture)
+
+
+def test_generate_successors():
+    search_space = SearchSpace(model_output_shape=2)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+
+    sequence = [14, 73, 131, 332, 332, 382]
+    successors = controller.generate_successors(sequence)
+    print(successors)
