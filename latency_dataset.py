@@ -13,7 +13,7 @@ from search_space import SearchSpace
 
 
 no_of_examples = 1000
-kmodel_limit = 3847*1024
+kmodel_limit = 3847
 latency_dataset = "latency_datasets/Dataset_3"
 model_input_shape = config.emnas["model_input_shape"]
 
@@ -57,11 +57,16 @@ def measure_sipeed_latency():
     df = pd.read_csv(f"{latency_dataset}/table.csv")
     kmodel_list = [i for i in os.listdir(latency_dataset) if ".kmodel" in i]
     kmodel_list.sort()
-    for kmodel in kmodel_list:
+    for i, kmodel in enumerate(kmodel_list):
         t1 = time.time()
         kmodel_name = kmodel.split(".")[0]
         kmodel_index = df[df["model"] == kmodel_name].index
         kmodel_memory = df.loc[kmodel_index, "kmodel_memory [KB]"].iloc[0]
+
+        current_cell = df.loc[kmodel_index[0], "sipeed_latency [ms]"]
+        if not pd.isna(current_cell):
+            print(kmodel_name, "already measured:", current_cell)
+            continue
 
         if kmodel_memory < kmodel_limit:
             try:
@@ -76,6 +81,10 @@ def measure_sipeed_latency():
 
         df.at[kmodel_index, "sipeed_latency [ms]"] = round(latency, 2)
         print(kmodel_name, "Latency measurement on Sipeed done.", time.time()-t1, "sec")
+
+        if (i+1) % 10 == 0:
+            print("Saving ..")
+            df.to_csv(f"{latency_dataset}/table.csv", index=False)  # save to hdd every 10 iter.
 
     df.to_csv(f"{latency_dataset}/table.csv", index=False)
 
@@ -116,7 +125,7 @@ def measure_cpu_latency():
 
 
 if __name__ == '__main__':
-    step = 1
+    step = 2
     sipeed_cam = SipeedCamera()
 
     if step == 1:
