@@ -8,7 +8,7 @@ import keras
 
 class LatencyPredictor(object):
     def __init__(self):
-        self.latency_dataset = "latency_datasets/Dataset_2"
+        self.latency_dataset = "latency_datasets/Dataset_3"
         self.mean = None
         self.std = None
         self.model = None
@@ -32,7 +32,8 @@ class LatencyPredictor(object):
             df_models.append(df_model)  # not used
 
         df["token_sequence"] = df["token_sequence"].apply(lambda x: json.loads(x))
-        df_tokens = pd.DataFrame.from_items(zip(df["token_sequence"].index, df["token_sequence"].values)).T
+        # df_tokens = pd.DataFrame.from_items(zip(df["token_sequence"].index, df["token_sequence"].values)).T
+        df_tokens = pd.DataFrame.from_dict(dict(zip(df["token_sequence"].index, df["token_sequence"].values))).T
         df_tokens.columns = [f"layer_{i}" for i in range(1, len(df_tokens.columns)+1)]
         df_out = pd.concat([df, df_tokens], axis=1)
         df_out = df_out.drop(["token_sequence", "model_info"], axis=1)
@@ -40,11 +41,12 @@ class LatencyPredictor(object):
 
     def pre_process(self):
         df = self.process_dataset()
+        df = df.dropna()
         df = df.drop(["model", "kmodel_memory [KB]", "cpu_latency [ms]"], axis=1)
 
         x = df.loc[:, df.columns != "sipeed_latency [ms]"]
         y = df.loc[:, df.columns == "sipeed_latency [ms]"]
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=123)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=123)
 
         # self.mean = x_train.mean(axis=0)
         # self.std = x_train.std(axis=0)
@@ -55,29 +57,26 @@ class LatencyPredictor(object):
 
     def regressor(self):
         model = keras.models.Sequential()
-        model.add(keras.layers.Dense(128, input_shape=(7, ), activation='relu', name='dense_1'))
-        model.add(keras.layers.Dense(64, activation='relu', name='dense_2'))
-        model.add(keras.layers.Dense(1, activation='linear', name='dense_output'))
+        model.add(keras.layers.Dense(128, input_shape=(7, ), activation='relu'))
+        model.add(keras.layers.Dense(64, activation='relu'))
+        model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(16, activation='relu'))
+        model.add(keras.layers.Dense(8, activation='relu'))
+        model.add(keras.layers.Dense(1, activation='linear'))
 
         model.compile(optimizer='adam', loss='mse', metrics=['mae'])
         self.model = model
 
     def train(self):
         x_train, x_test, y_train, y_test = self.pre_process()
-        history = self.model.fit(x_train, y_train, epochs=10, validation_split=0.05)
+        history = self.model.fit(x_train, y_train, epochs=100, validation_split=0.01)
 
         mse_nn, mae_nn = self.model.evaluate(x_test, y_test)
+        self.model.save(f"{self.latency_dataset}/regressor.h5")
+        return mse_nn, mae_nn
 
     def inference(self, sequence, architecture):
-        # data = {
-        #     "params [K]": 11.298,
-        #     "layer_1": 14,
-        #     "layer_2": 73,
-        #     "layer_3": 131,
-        #     "layer_4": 332,
-        #     "layer_5": 332,
-        #     "layer_6": 382,
-        # }  # latency = 858.01
+        model = keras.models.load_model(f"{self.latency_dataset}/regressor.h5")
         data = {
             "params [K]": round(architecture.count_params()/1000, 4),
             "layer_1": sequence[0],
@@ -86,9 +85,9 @@ class LatencyPredictor(object):
             "layer_4": sequence[3],
             "layer_5": sequence[4],
             "layer_6": sequence[5],
-        }  # latency = 858.01
+        }
 
-        prediction = self.model.predict(pd.DataFrame(data, index=[0]))[0][0]
+        prediction = model.predict(pd.DataFrame(data, index=[0]))[0][0]
 
         # data_n = (pd.Series(data) - self.mean) / self.std
         # prediction = self.model.predict(pd.DataFrame(data_n).T)

@@ -1,3 +1,6 @@
+"""
+MicroPython script for Sipeed camera
+"""
 import sensor, image, lcd, time
 import KPU as kpu
 
