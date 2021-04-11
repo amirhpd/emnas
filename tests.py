@@ -110,14 +110,12 @@ def test_sipeed_get_latency():
 
 
 def test_latency_predictor():
-    search_space = SearchSpace(model_output_shape=2)
     latency_predictor = LatencyPredictor()
 
-    # mse_nn, mae_nn = latency_predictor.train()
+    # history = latency_predictor.train()
 
-    # sequence = [250, 142, 35, 296, 119, 382]  # 9.52
-    # sequence = [140, 280, 87, 333, 365, 382]  # 1819.09
-    sequence = [265, 287, 238, 209, 306, 382]  # 74.53
-    architecture = search_space.create_model(sequence=sequence, model_input_shape=(128, 128, 3))
-    predicted = latency_predictor.inference(sequence=sequence, architecture=architecture)
-    print(predicted)
+    # sequence = [25, 217, 306, 361, 377, 382]  # j:30, s:307
+    sequence = [105, 65, 291, 239, 189, 382]  # j:6, s:111
+    predicted_j = latency_predictor.inference(sequence=sequence, hardware="jevois")
+    predicted_s = latency_predictor.inference(sequence=sequence, hardware="sipeed")
+    print(predicted_j, predicted_s)
