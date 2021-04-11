@@ -113,7 +113,11 @@ def test_latency_predictor():
     search_space = SearchSpace(model_output_shape=2)
     latency_predictor = LatencyPredictor()
 
-    sequence = [14, 73, 131, 332, 332, 382]
+    # mse_nn, mae_nn = latency_predictor.train()
+
+    # sequence = [250, 142, 35, 296, 119, 382]  # 9.52
+    # sequence = [140, 280, 87, 333, 365, 382]  # 1819.09
+    sequence = [265, 287, 238, 209, 306, 382]  # 74.53
     architecture = search_space.create_model(sequence=sequence, model_input_shape=(128, 128, 3))
-    latency_predictor.train()
-    latency_predictor.inference(sequence=sequence, architecture=architecture)
+    predicted = latency_predictor.inference(sequence=sequence, architecture=architecture)
+    print(predicted)
