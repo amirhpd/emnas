@@ -1,6 +1,5 @@
 import pandas as pd
 import json
-from sklearn.model_selection import train_test_split
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
@@ -8,91 +7,95 @@ import keras
 
 class LatencyPredictor(object):
     def __init__(self):
-        self.latency_dataset = "latency_datasets/Dataset_3"
-        self.mean = None
-        self.std = None
-        self.model = None
-        self.regressor()
+        self.latency_dataset = "misc"
+        self.outlier_limit = {"Sipeed": 2000, "Jevois": 100}
+        self.lr = 0.001
+        self.train_epochs = 1000
 
     def process_dataset(self):
         df = pd.read_csv(f"{self.latency_dataset}/table.csv")
-        df_models = []
-
-        for model_i in range(len(df)):
-            model_info = json.loads(df["model_info"][model_i])
-            for key, value in model_info.items():
-                if len(value) == 3:
-                    model_info[key][2:2] = [None]*3
-                if len(value) == 2:
-                    model_info[key].insert(0, "output")
-                    model_info[key][2:2] = [None]*3
-
-            df_model = pd.DataFrame(model_info).T
-            df_model.columns = ["layer", "size", "kernel_size", "stride", "padding", "activation"]
-            df_models.append(df_model)  # not used
-
         df["token_sequence"] = df["token_sequence"].apply(lambda x: json.loads(x))
-        # df_tokens = pd.DataFrame.from_items(zip(df["token_sequence"].index, df["token_sequence"].values)).T
         df_tokens = pd.DataFrame.from_dict(dict(zip(df["token_sequence"].index, df["token_sequence"].values))).T
         df_tokens.columns = [f"layer_{i}" for i in range(1, len(df_tokens.columns)+1)]
-        df_out = pd.concat([df, df_tokens], axis=1)
-        df_out = df_out.drop(["token_sequence", "model_info"], axis=1)
-        return df_out
+        df = pd.concat([df, df_tokens], axis=1)
+        df = df.drop(["token_sequence", "model_info"], axis=1)
+
+        df = df.dropna()
+        df = df.drop(["params [K]", "model", "kmodel_memory [KB]",
+                      "cpu_latency [ms]", "layer_6"], axis=1)
+        return df
 
     def pre_process(self):
         df = self.process_dataset()
-        df = df.dropna()
-        df = df.drop(["model", "kmodel_memory [KB]", "cpu_latency [ms]"], axis=1)
+        df = df[df["jevois_latency [ms]"] <= self.outlier_limit["Jevois"]]  # remove outliers
+        df = df[df["sipeed_latency [ms]"] <= self.outlier_limit["Sipeed"]]  # remove outliers
 
-        x = df.loc[:, df.columns != "sipeed_latency [ms]"]
-        y = df.loc[:, df.columns == "sipeed_latency [ms]"]
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=123)
+        x = df.drop(["jevois_latency [ms]", "sipeed_latency [ms]"], axis=1)
+        x = keras.utils.to_categorical(x, num_classes=383)
+        y_jevois = df.loc[:, df.columns == "jevois_latency [ms]"].round(0)
+        y_sipeed = df.loc[:, df.columns == "sipeed_latency [ms]"].round(0)
 
-        # self.mean = x_train.mean(axis=0)
-        # self.std = x_train.std(axis=0)
-        # x_train_n = (x_train - self.mean) / self.std
-        # x_test_n = (x_test - self.mean) / self.std
-
-        return x_train, x_test, y_train, y_test
+        return x, y_jevois, y_sipeed
 
     def regressor(self):
         model = keras.models.Sequential()
-        model.add(keras.layers.Dense(128, input_shape=(7, ), activation='relu'))
+        model.add(keras.layers.Dense(64, input_shape=(5, 383), activation='relu'))
         model.add(keras.layers.Dense(64, activation='relu'))
         model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(16, activation='relu'))
         model.add(keras.layers.Dense(16, activation='relu'))
         model.add(keras.layers.Dense(8, activation='relu'))
+        model.add(keras.layers.Dropout(0.2))
+        model.add(keras.layers.Flatten())
+        model.add(keras.layers.Dense(8, activation='relu'))
+        model.add(keras.layers.Dense(16, activation='relu'))
+        model.add(keras.layers.Dense(16, activation='relu'))
+        model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(32, activation='relu'))
+        model.add(keras.layers.Dense(64, activation='relu'))
+        model.add(keras.layers.Dropout(0.2))
         model.add(keras.layers.Dense(1, activation='linear'))
 
-        model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-        self.model = model
+        optimizer = keras.optimizers.Adam(lr=self.lr)
+        model.compile(optimizer=optimizer, loss='mse', metrics=['mae'])
+        return model
 
     def train(self):
-        x_train, x_test, y_train, y_test = self.pre_process()
-        history = self.model.fit(x_train, y_train, epochs=100, validation_split=0.01)
+        x, y_jevois, y_sipeed = self.pre_process()
 
-        mse_nn, mae_nn = self.model.evaluate(x_test, y_test)
-        self.model.save(f"{self.latency_dataset}/regressor.h5")
-        return mse_nn, mae_nn
+        model_j = self.regressor()
+        history_j = model_j.fit(x, y_jevois, epochs=self.train_epochs, validation_split=0.1, verbose=3)
+        val_loss_j = history_j.history["val_loss"][-1]
+        val_mae_j = history_j.history["val_mae"][-1]
+        model_j.save(f"{self.latency_dataset}/regressor_jevois.h5")
 
-    def inference(self, sequence, architecture):
-        model = keras.models.load_model(f"{self.latency_dataset}/regressor.h5")
+        model_s = self.regressor()
+        history_s = model_s.fit(x, y_sipeed, epochs=self.train_epochs, validation_split=0.1, verbose=3)
+        val_loss_s = history_s.history["val_loss"][-1]
+        val_mae_s = history_s.history["val_mae"][-1]
+        model_s.save(f"{self.latency_dataset}/regressor_sipeed.h5")
+
+        history = {
+            "Jevois": {"val_loss": val_loss_j, "val_mae": val_mae_j},
+            "Sipeed": {"val_loss": val_loss_s, "val_mae": val_mae_s},
+        }
+        return history
+
+    def inference(self, sequence, hardware):
+        model = keras.models.load_model(f"{self.latency_dataset}/regressor_{hardware}.h5")
         data = {
-            "params [K]": round(architecture.count_params()/1000, 4),
             "layer_1": sequence[0],
             "layer_2": sequence[1],
             "layer_3": sequence[2],
             "layer_4": sequence[3],
             "layer_5": sequence[4],
-            "layer_6": sequence[5],
         }
-
-        prediction = model.predict(pd.DataFrame(data, index=[0]))[0][0]
-
-        # data_n = (pd.Series(data) - self.mean) / self.std
-        # prediction = self.model.predict(pd.DataFrame(data_n).T)
-        # prediction = (prediction_n * self.std) + self.mean
-
+        x_predict = pd.DataFrame(data, index=[0])
+        x_predict_hot = keras.utils.to_categorical(x_predict, num_classes=383)
+        prediction = model.predict(x_predict_hot)[0][0]
         return prediction
 
 
