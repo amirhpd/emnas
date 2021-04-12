@@ -11,7 +11,8 @@ trainer = {
     "model_validation_split": 0.1,
     "model_batch_size": 10,
     "model_epochs": 1,
-    "verbose": 0,
+    "verbose": 1,
+    "hardware": "sipeed",  # sipeed, jevois
 }
 controller = {
     "no_of_samples_per_epoch": 10,
@@ -24,8 +25,14 @@ controller = {
     "rl_baseline": 0.85,
     "verbose": 0,
 }
+latency_predictor = {
+    "latency_dataset": "misc",
+    "outlier_limit": {"sipeed": 2000, "jevois": 100},
+    "lr": 0.001,
+    "train_epochs": 1000,
+}
 emnas = {
-    "no_of_nas_epochs": 10,
+    "no_of_nas_epochs": 20,
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
     "search_mode": "rnn",  # rnn, random, bruteforce

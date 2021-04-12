@@ -3,9 +3,11 @@ Search Strategy
 generates sequences of token keys, based on lstm predictor
 """
 import itertools
-import keras
 import numpy as np
 import config
+import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import keras
 
 
 class Controller(object):
@@ -20,6 +22,8 @@ class Controller(object):
         self.rnn_loss_alpha = config.controller["rnn_loss_alpha"]
         self.rl_baseline = config.controller["rl_baseline"]
         self.verbose = config.controller["verbose"]
+        self.outlier_limit = config.latency_predictor["outlier_limit"]
+        self.hardware = config.trainer["hardware"]
         self.epoch_performance = None
         self.tokens = tokens
         self.rnn_classes = len(tokens)
@@ -87,7 +91,8 @@ class Controller(object):
         return lstm_loss_avg
 
     def reinforce(self, y_true, y_pred):
-        rewards = (np.array(list(self.epoch_performance.values())) - self.rl_baseline)[np.newaxis].T
+        # rewards = (np.array([i[0] for i in list(self.epoch_performance.values())]) - self.rl_baseline)[np.newaxis].T
+        rewards = (self.objective_fn() - self.rl_baseline)[np.newaxis].T
         discounted_rewards = self.discount_reward(rewards)
         y_pred = keras.backend.clip(y_pred, 1e-36, 1e36)
         loss = - keras.backend.log(y_pred) * discounted_rewards[:, None]
@@ -103,6 +108,15 @@ class Controller(object):
         if len(rewards) > 1:
             discounted_reward = (discounted_reward - discounted_reward.mean()) / discounted_reward.std()
         return discounted_reward
+    
+    def objective_fn(self):
+        acc = [i[0] for i in list(self.epoch_performance.values())]
+        lat = [i[1] for i in list(self.epoch_performance.values())]
+        lat_mapped = [np.interp(i, [0, self.outlier_limit[self.hardware]], [0, 1]) for i in lat]
+        lat_scaled = [i*0.5 for i in lat_mapped]
+        reward = [i-j for i, j in zip(acc, lat_scaled)]
+        reward = np.clip(reward, 0.01, max(reward))
+        return reward
 
     def generate_sequence_naive(self, mode: str):
         if mode == "b":  # Brute-force

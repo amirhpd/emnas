@@ -1,16 +1,17 @@
 import pandas as pd
 import json
 import os
+import config
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
 
 
 class LatencyPredictor(object):
     def __init__(self):
-        self.latency_dataset = "misc"
-        self.outlier_limit = {"Sipeed": 2000, "Jevois": 100}
-        self.lr = 0.001
-        self.train_epochs = 1000
+        self.latency_dataset = config.latency_predictor["latency_dataset"]
+        self.outlier_limit = config.latency_predictor["outlier_limit"]
+        self.lr = config.latency_predictor["lr"]
+        self.train_epochs = config.latency_predictor["train_epochs"]
 
     def process_dataset(self):
         df = pd.read_csv(f"{self.latency_dataset}/table.csv")
@@ -27,8 +28,8 @@ class LatencyPredictor(object):
 
     def pre_process(self):
         df = self.process_dataset()
-        df = df[df["jevois_latency [ms]"] <= self.outlier_limit["Jevois"]]  # remove outliers
-        df = df[df["sipeed_latency [ms]"] <= self.outlier_limit["Sipeed"]]  # remove outliers
+        df = df[df["jevois_latency [ms]"] <= self.outlier_limit["jevois"]]  # remove outliers
+        df = df[df["sipeed_latency [ms]"] <= self.outlier_limit["sipeed"]]
 
         x = df.drop(["jevois_latency [ms]", "sipeed_latency [ms]"], axis=1)
         x = keras.utils.to_categorical(x, num_classes=383)
