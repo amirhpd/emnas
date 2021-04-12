@@ -4,13 +4,16 @@ creates different possibilities of NN as a dict of tokens and layer info
 translates a sequence of tokens to layer info
 converts a token sequence to keras model
 """
-from keras import optimizers
-from keras.models import Sequential
-import keras
 import itertools
 from typing import List, Dict, Tuple
 import config
 import json
+import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import keras
+from keras import optimizers
+from keras.models import Sequential
+import tensorflow as tf
 
 
 class SearchSpace(object):
@@ -108,6 +111,10 @@ class SearchSpace(object):
     def create_models(self, samples: List, model_input_shape: Tuple) -> List:
         architectures = []
         for sequence in samples:
-            architecture = self.create_model(sequence=sequence, model_input_shape=model_input_shape)
-            architectures.append(architecture)
+            try:
+                architecture = self.create_model(sequence=sequence, model_input_shape=model_input_shape)
+                architectures.append(architecture)
+            except ValueError as e:
+                print("Skipped:", sequence, "due to:", e)
+
         return architectures

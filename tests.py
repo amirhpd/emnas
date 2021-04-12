@@ -32,7 +32,7 @@ def test_trainer():
     samples = controller.generate_sequence()
     architectures = search_space.create_models(samples=samples, model_input_shape=(128, 128, 3))
     epoch_performance = trainer.train_models(samples=samples, architectures=architectures)
-    assert len(epoch_performance) == 0
+    assert len(epoch_performance) != 0
 
 
 def test_controller_rnn_trainer():
@@ -41,10 +41,10 @@ def test_controller_rnn_trainer():
     controller = Controller(tokens=tokens)
     samples = controller.generate_sequence()
     manual_epoch_performance = {
-        (466, 262, 372, 85, 52, 572): 0.4930555522441864,
-        (360, 153, 307, 390, 473, 572): 0.5069444179534912,
-        (315, 476, 563, 565, 560, 572): 0.8032407164573669,
-        (318, 291, 20, 326, 161, 572): 0.8055555820465088
+        (320, 96, 338, 84, 176, 382): (0.968, 1259.238),  # (acc, lat)
+        (22, 47, 225, 315, 223, 382): (0.909, 1455.473),
+        (74, 204, 73, 236, 309, 382): (0.355, 84.884),
+        (110, 60, 191, 270, 199, 382): (0.213, 1538.386)
     }
 
     loss_avg = controller.train_controller_rnn(epoch_performance=manual_epoch_performance)

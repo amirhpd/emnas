@@ -2,8 +2,11 @@
 Performance Estimation Strategy
 trains the architectures created in search_space
 """
-import keras
 import config
+from latency_predictor import LatencyPredictor
+import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import keras
 
 
 class Trainer(object):
@@ -17,6 +20,8 @@ class Trainer(object):
         self.train_batch = None
         self.validation_batch = None
         self.read_dataset()
+        self.latency_predictor = LatencyPredictor()
+        self.hardware = config.trainer["hardware"]  # sipeed, jevois
 
     def read_dataset(self):
         data_generator = keras.preprocessing.image.ImageDataGenerator(
@@ -36,9 +41,10 @@ class Trainer(object):
                                 validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
                                 epochs=self.model_epochs, verbose=self.verbose)
 
-            acc = history.history['val_accuracy'][0]
-            print("Sequence:", samples[i], "Accuracy:", acc)
+            acc = round(history.history['val_accuracy'][0], 2)
+            latency = round(self.latency_predictor.inference(sequence=samples[i], hardware=self.hardware), 2)
+            print("Sequence:", samples[i], "Accuracy:", acc, "Latency:", latency, "ms")
             # epoch_performance.append([samples[i], acc])
-            epoch_performance[tuple(samples[i])] = acc
+            epoch_performance[tuple(samples[i])] = (acc, latency)
 
         return epoch_performance
