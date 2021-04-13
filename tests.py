@@ -26,10 +26,11 @@ def test_search_space():
 def test_trainer():
     search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
-    controller = Controller(tokens=tokens)
+    # controller = Controller(tokens=tokens)
     trainer = Trainer()
 
-    samples = controller.generate_sequence()
+    # samples = controller.generate_sequence()
+    samples = [[65, 146, 143, 201, 281, 382]]
     architectures = search_space.create_models(samples=samples, model_input_shape=(128, 128, 3))
     epoch_performance = trainer.train_models(samples=samples, architectures=architectures)
     assert len(epoch_performance) != 0
