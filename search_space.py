@@ -116,5 +116,6 @@ class SearchSpace(object):
                 architectures.append(architecture)
             except ValueError as e:
                 print("Skipped:", sequence, "due to:", e)
+                architectures.append(None)
 
         return architectures

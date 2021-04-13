@@ -100,9 +100,9 @@ def main_rnn():
     for nas_epoch in range(no_of_nas_epochs):
         print(f"NAS epoch {nas_epoch+1}/{no_of_nas_epochs}:")
         samples = controller.generate_sequence()
-        architectures = search_space.create_models(samples=samples, model_input_shape=model_input_shape)
 
-        print(f"Training {len(architectures)} architectures:")
+        print(f"Training {len(samples)} architectures:")
+        architectures = search_space.create_models(samples=samples, model_input_shape=model_input_shape)
         epoch_performance = trainer.train_models(samples=samples, architectures=architectures)
         history_result.update(epoch_performance)
         avg_acc = round(np.average([i[0] for i in list(epoch_performance.values())]), 3)
