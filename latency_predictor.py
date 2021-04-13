@@ -8,6 +8,7 @@ import keras
 
 class LatencyPredictor(object):
     def __init__(self):
+        self.latency = config.latency_predictor["latency"]
         self.latency_dataset = config.latency_predictor["latency_dataset"]
         self.outlier_limit = config.latency_predictor["outlier_limit"]
         self.lr = config.latency_predictor["lr"]
@@ -86,6 +87,8 @@ class LatencyPredictor(object):
         return history
 
     def inference(self, sequence, hardware):
+        if (None in sequence) or (self.latency is False):  # latency prediction disabled
+            return 0
         model = keras.models.load_model(f"{self.latency_dataset}/regressor_{hardware}.h5")
         data = {
             "layer_1": sequence[0],

@@ -7,11 +7,11 @@ search_space = {
     "model_metrics": ["accuracy"],
 }
 trainer = {
-    "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678",
+    "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
     "model_validation_split": 0.1,
     "model_batch_size": 10,
     "model_epochs": 1,
-    "verbose": 1,
+    "verbose": 0,
     "hardware": "sipeed",  # sipeed, jevois
 }
 controller = {
@@ -23,9 +23,11 @@ controller = {
     "rnn_no_of_epochs": 200,
     "rnn_loss_alpha": 0.9,
     "rl_baseline": 0.85,
+    "latency_coefficient": 0.5,
     "verbose": 0,
 }
 latency_predictor = {
+    "latency": False,  # enable/disable latency
     "latency_dataset": "misc",
     "outlier_limit": {"sipeed": 2000, "jevois": 100},
     "lr": 0.001,

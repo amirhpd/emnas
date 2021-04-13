@@ -24,6 +24,7 @@ class Controller(object):
         self.verbose = config.controller["verbose"]
         self.outlier_limit = config.latency_predictor["outlier_limit"]
         self.hardware = config.trainer["hardware"]
+        self.latency_coefficient = config.controller["latency_coefficient"]
         self.epoch_performance = None
         self.tokens = tokens
         self.rnn_classes = len(tokens)
@@ -113,7 +114,7 @@ class Controller(object):
         acc = [i[0] for i in list(self.epoch_performance.values())]
         lat = [i[1] for i in list(self.epoch_performance.values())]
         lat_mapped = [np.interp(i, [0, self.outlier_limit[self.hardware]], [0, 1]) for i in lat]
-        lat_scaled = [i*0.5 for i in lat_mapped]
+        lat_scaled = [i*self.latency_coefficient for i in lat_mapped]
         reward = [i-j for i, j in zip(acc, lat_scaled)]
         reward = np.clip(reward, 0.01, max(reward))
         return reward
