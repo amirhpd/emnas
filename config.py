@@ -22,7 +22,8 @@ controller = {
     "rnn_decay": 0.1,
     "rnn_no_of_epochs": 200,
     "rnn_loss_alpha": 0.9,
-    "rl_baseline": 0.85,
+    "rl_baseline": 0.9,
+    "reward_coefficient": 1000,
     "latency_coefficient": 0.5,
     "verbose": 0,
 }

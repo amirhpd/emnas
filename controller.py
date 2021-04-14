@@ -21,6 +21,7 @@ class Controller(object):
         self.rnn_no_of_epochs = config.controller["rnn_no_of_epochs"]
         self.rnn_loss_alpha = config.controller["rnn_loss_alpha"]
         self.rl_baseline = config.controller["rl_baseline"]
+        self.reward_coefficient = config.controller["reward_coefficient"]
         self.verbose = config.controller["verbose"]
         self.outlier_limit = config.latency_predictor["outlier_limit"]
         self.hardware = config.trainer["hardware"]
@@ -79,6 +80,7 @@ class Controller(object):
 
     def train_controller_rnn(self, epoch_performance):
         self.epoch_performance = epoch_performance
+        print("Rewards:", self.objective_fn())
         samples = list(epoch_performance.keys())
         rnn_x = np.array(samples)[:, :-1].reshape(len(samples), 1, self.no_of_layers - 1)
         rnn_y = keras.utils.to_categorical(np.array(samples)[:, -1], self.rnn_classes+1).reshape(len(samples),
@@ -93,7 +95,7 @@ class Controller(object):
 
     def reinforce(self, y_true, y_pred):
         # rewards = (np.array([i[0] for i in list(self.epoch_performance.values())]) - self.rl_baseline)[np.newaxis].T
-        rewards = (self.objective_fn() - self.rl_baseline)[np.newaxis].T
+        rewards = (self.objective_fn())[np.newaxis].T
         discounted_rewards = self.discount_reward(rewards)
         y_pred = keras.backend.clip(y_pred, 1e-36, 1e36)
         loss = - keras.backend.log(y_pred) * discounted_rewards[:, None]
@@ -117,7 +119,10 @@ class Controller(object):
         lat_scaled = [i*self.latency_coefficient for i in lat_mapped]
         reward = [i-j for i, j in zip(acc, lat_scaled)]
         reward = np.clip(reward, 0.01, max(reward))
-        return reward
+
+        reward_exp = self.reward_coefficient*(reward-self.rl_baseline)**3
+        # reward_exp = np.clip(reward_exp, -5, 5)
+        return reward_exp
 
     def generate_sequence_naive(self, mode: str):
         if mode == "b":  # Brute-force
