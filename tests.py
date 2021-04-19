@@ -9,11 +9,11 @@ from camera_drive import SipeedCamera
 
 
 def test_search_space():
-    search_space = SearchSpace(model_output_shape=1)
+    search_space = SearchSpace(model_output_shape=2)
     token = search_space.generate_token()
 
     dense_tokens = [x for x, y in token.items() if "Dense" in y]  # dense layers start from 865
-    sample_sequence = [12, 520, 870, 890]
+    sample_sequence = [52, 146, 31, 119, 138, 244]
     translated_sequence = search_space.translate_sequence(sample_sequence)
     assert len(translated_sequence) == 4
 
@@ -40,12 +40,12 @@ def test_controller_rnn_trainer():
     search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
-    samples = controller.generate_sequence()
+    # samples = controller.generate_sequence()
     manual_epoch_performance = {
-        (320, 96, 338, 84, 176, 382): (0.968, 1259.238),  # (acc, lat)
-        (22, 47, 225, 315, 223, 382): (0.909, 1455.473),
-        (74, 204, 73, 236, 309, 382): (0.355, 84.884),
-        (110, 60, 191, 270, 199, 382): (0.213, 1538.386)
+        (320, 96, 338, 84, 176, 382): (0.968, 0),  # (acc, lat)
+        (22, 47, 225, 315, 223, 382): (0.87, 0),
+        (74, 204, 73, 236, 309, 382): (0.74, 0),
+        (110, 60, 191, 270, 199, 382): (0.51, 0)
     }
 
     loss_avg = controller.train_controller_rnn(epoch_performance=manual_epoch_performance)

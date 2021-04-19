@@ -24,6 +24,7 @@ class Trainer(object):
         self.read_dataset()
         self.latency_predictor = LatencyPredictor()
         self.hardware = config.trainer["hardware"]  # sipeed, jevois
+        self.outlier_limit = config.latency_predictor["outlier_limit"]
 
     def read_dataset(self):
         data_generator = keras.preprocessing.image.ImageDataGenerator(
@@ -39,16 +40,19 @@ class Trainer(object):
     def train_models(self, samples, architectures):
         epoch_performance = {}
         for i, model in enumerate(architectures):
-            t1 = time.time()
-            history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch),
-                                validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
-                                epochs=self.model_epochs, verbose=self.verbose)
+            if model is None:
+                epoch_performance[tuple(samples[i])] = (0.4, 0)  # assign bad reward
+            else:
+                t1 = time.time()
+                history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch),
+                                    validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
+                                    epochs=self.model_epochs, verbose=self.verbose)
 
-            t2 = round(time.time() - t1, 2)
-            acc = round(history.history['val_accuracy'][-1], 2)
-            latency = round(self.latency_predictor.inference(sequence=samples[i], hardware=self.hardware), 2)
-            print("Sequence:", samples[i], "Accuracy:", acc, "Latency:", latency, "ms")
-            # epoch_performance.append([samples[i], acc])
-            epoch_performance[tuple(samples[i])] = (acc, latency)
+                t2 = round(time.time() - t1, 2)
+                acc = round(history.history['val_accuracy'][-1], 2)
+                latency = round(self.latency_predictor.inference(sequence=samples[i], hardware=self.hardware), 2)
+                print("Sequence:", samples[i], "Accuracy:", acc, "Latency:", latency, "ms")
+                # epoch_performance.append([samples[i], acc])
+                epoch_performance[tuple(samples[i])] = (acc, latency)
 
         return epoch_performance
