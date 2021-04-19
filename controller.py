@@ -38,7 +38,7 @@ class Controller(object):
 
         sample_seq = 0
         while sample_seq < self.no_of_samples_per_epoch:
-            sequence = np.zeros((1, 1, self.no_of_layers - 1), dtype="int32")
+            sequence = np.zeros((1, 1, self.no_of_layers - 1), dtype="int64")
             dense_flag = False
 
             layer = 0

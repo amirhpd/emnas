@@ -9,11 +9,11 @@ from camera_drive import SipeedCamera
 
 
 def test_search_space():
-    search_space = SearchSpace(model_output_shape=1)
+    search_space = SearchSpace(model_output_shape=2)
     token = search_space.generate_token()
 
     dense_tokens = [x for x, y in token.items() if "Dense" in y]  # dense layers start from 865
-    sample_sequence = [12, 520, 870, 890]
+    sample_sequence = [52, 146, 31, 119, 138, 244]
     translated_sequence = search_space.translate_sequence(sample_sequence)
     assert len(translated_sequence) == 4
 

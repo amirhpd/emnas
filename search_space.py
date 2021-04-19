@@ -14,6 +14,7 @@ import keras
 from keras import optimizers
 from keras.models import Sequential
 import tensorflow as tf
+import collections
 
 
 class SearchSpace(object):
@@ -38,7 +39,7 @@ class SearchSpace(object):
         kernel_sizes = [tuple(i) for i in ranges["kernel_sizes"]]
         strides = [tuple(i) for i in ranges["strides"]]
 
-        # keys as int
+        # keys as cont. int
         cnn_params = list(itertools.product(*[layers, filters, kernel_sizes, strides, paddings, activations]))
         cnn_count = range(1, len(cnn_params)+1)
         cnn_token = dict(zip(cnn_count, cnn_params))
@@ -53,7 +54,42 @@ class SearchSpace(object):
         else:
             dense_token[dense_count[-1]+2] = (self.model_output_shape, "softmax")
 
-        return {**cnn_token, **dense_token}
+        tokens = {**cnn_token, **dense_token}
+
+        # keys as coded int
+        # space_cnn = [layers, filters, kernel_sizes, strides, paddings, activations]
+        # cnn_params = list(itertools.product(*space_cnn))
+        # elements = [item for sublist in space_cnn for item in sublist]
+        # elements = list(collections.OrderedDict.fromkeys(elements))
+        # elements_dict = dict(zip(elements, range(10, len(elements)+11)))
+        # cnn_token = {}
+        # for layer in cnn_params:
+        #     token = ""
+        #     for param in layer:
+        #         letter = str(elements_dict[param])
+        #         token += letter
+        #     cnn_token.update({int(token): layer})
+        #
+        # space_dense = [["Dense"], nodes, activations]
+        # dense_params = list(itertools.product(*space_dense))
+        # elements_d = [item for sublist in space_dense for item in sublist]
+        # elements_d = list(collections.OrderedDict.fromkeys(elements_d))
+        # elements_d_dict = dict(zip(elements_d, range(10, len(elements_d)+11)))
+        # dense_token = {}
+        # for layer in dense_params:
+        #     token = ""
+        #     for param in layer:
+        #         letter = str(elements_d_dict[param])
+        #         token += letter
+        #     dense_token.update({int(token): layer})
+        #
+        # tokens = {**cnn_token, **dense_token, 1: ("dropout", self.model_dropout)}
+        # if self.model_output_shape == 1:
+        #     tokens[2] = (1, "sigmoid")
+        # else:
+        #     tokens[2] = (self.model_output_shape, "softmax")
+
+        return tokens
 
     def translate_sequence(self, sequence):
         token = self.generate_token()
