@@ -125,14 +125,20 @@ class Controller(object):
         return reward_exp
 
     def generate_sequence_naive(self, mode: str):
+        token_keys = list(self.tokens.keys())
         if mode == "b":  # Brute-force
-            token_keys = list(self.tokens.keys())
             space = itertools.permutations(token_keys, self.no_of_layers-1)
             return space
         if mode == "r":  # Random
             sequence = []
-            token_keys = list(self.tokens.keys())
             for i in range(self.no_of_layers-1):
+                token = np.random.choice(token_keys)
+                sequence.append(token)
+            return sequence
+        if mode == "r_var_len":
+            sequence = []
+            length = np.random.randint(3, self.no_of_layers-1, 1)[0]
+            for i in range(length):
                 token = np.random.choice(token_keys)
                 sequence.append(token)
             return sequence

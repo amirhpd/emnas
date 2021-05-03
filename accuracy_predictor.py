@@ -7,7 +7,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
 
 
-latency_dataset = "latency_datasets/Dataset_3"
+latency_dataset = "latency_datasets/Dataset_4"
+table_name = "table"
 trainer_ = Trainer()
 
 # class AccuracyPredictor(object):
@@ -17,7 +18,7 @@ trainer_ = Trainer()
 
 
 def measure_accuracy():
-    df = pd.read_csv(f"{latency_dataset}/table_acc.csv")
+    df = pd.read_csv(f"{latency_dataset}/{table_name}.csv")
     h5_list = [i for i in os.listdir(latency_dataset) if ".h5" in i]
     h5_list.sort()
     for i, h5 in enumerate(h5_list):
@@ -45,9 +46,9 @@ def measure_accuracy():
 
         if (i+1) % 10 == 0:
             print("Saving ..")
-            df.to_csv(f"{latency_dataset}/table_acc.csv", index=False)  # save to hdd every 10 iter.
+            df.to_csv(f"{latency_dataset}/{table_name}.csv", index=False)  # save to hdd every 10 iter.
 
-    df.to_csv(f"{latency_dataset}/table_acc.csv", index=False)
+    df.to_csv(f"{latency_dataset}/{table_name}.csv", index=False)
 
 
 if __name__ == '__main__':
