@@ -16,7 +16,7 @@ trainer = {
 }
 controller = {
     "no_of_samples_per_epoch": 10,
-    "no_of_layers": 12,
+    "no_of_layers": 16,
     "rnn_dim": 100,
     "rnn_lr": 0.01,
     "rnn_decay": 0.1,

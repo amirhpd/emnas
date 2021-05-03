@@ -70,8 +70,12 @@ def test_controller_generate_sequence_naive():
     #     sequence_ = sequence
     #     print(sequence_)
 
-    sequences_random = controller.generate_sequence_naive(mode="r")
-    print(sequences_random)
+    # sequences_random = controller.generate_sequence_naive(mode="r")
+
+    for i in range(20):
+        sequences_random = controller.generate_sequence_naive(mode="r_var_len")
+        print(sequences_random)
+    print("Done.")
 
 
 def test_plot_image_logs():
