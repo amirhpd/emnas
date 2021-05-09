@@ -110,7 +110,7 @@ def test_plot_image_logs():
 
 def test_sipeed_get_latency():
     sipeed_cam = SipeedCamera()
-    latency = sipeed_cam.get_latency(model_file="model_6.kmodel")
+    latency = sipeed_cam.get_latency(model_file="model_0001.kmodel")
     print(latency)
 
 
@@ -124,3 +124,9 @@ def test_latency_predictor():
     predicted_j = latency_predictor.inference(sequence=sequence, hardware="jevois")
     predicted_s = latency_predictor.inference(sequence=sequence, hardware="sipeed")
     print(predicted_j, predicted_s)
+
+
+def test_convert_kmodel():
+    latency_dataset = "/home/amirhossein/Codes/NAS/mobileNet/converted"
+    sipeed_cam = SipeedCamera()
+    sipeed_cam.convert_kmodel(latency_dataset)

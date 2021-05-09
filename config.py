@@ -10,7 +10,7 @@ trainer = {
     "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
     "model_validation_split": 0.1,
     "model_batch_size": 10,
-    "model_epochs": 3,
+    "model_epochs": 5,
     "verbose": 0,
     "hardware": "sipeed",  # sipeed, jevois
 }

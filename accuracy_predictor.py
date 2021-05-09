@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
 
 
-latency_dataset = "latency_datasets/Dataset_4"
+latency_dataset = "latency_datasets/Dataset_5"
 table_name = "table"
 trainer_ = Trainer()
 

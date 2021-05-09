@@ -12,9 +12,9 @@ from controller import Controller
 from search_space import SearchSpace
 
 
-no_of_examples = 500
+no_of_examples = 3000
 kmodel_limit = 3847
-latency_dataset = "latency_datasets/Dataset_4"
+latency_dataset = "latency_datasets/Dataset_5"
 model_input_shape = config.emnas["model_input_shape"]
 
 
@@ -136,17 +136,17 @@ if __name__ == '__main__':
         generate_models()
         print("Model generation done.", round(time.time()-t0, 2), "s")
 
-        # # Step 1.2
-        # print("Converting models ..")
-        # t0 = time.time()
-        # sipeed_cam.convert_kmodel(latency_dataset)
-        # print("Kmodel conversion done.", round(time.time()-t0, 2), "s")
-        #
-        # # Step 1.3
-        # print("Measuring CPU latency ..")
-        # t0 = time.time()
-        # measure_cpu_latency()
-        # print("CPU latency measurement done.", round(time.time()-t0, 2), "s")
+        # Step 1.2
+        print("Converting models ..")
+        t0 = time.time()
+        sipeed_cam.convert_kmodel(latency_dataset)
+        print("Kmodel conversion done.", round(time.time()-t0, 2), "s")
+
+        # Step 1.3
+        print("Measuring CPU latency ..")
+        t0 = time.time()
+        measure_cpu_latency()
+        print("CPU latency measurement done.", round(time.time()-t0, 2), "s")
 
     if step == 2:
         # Step 2
