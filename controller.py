@@ -4,6 +4,7 @@ generates sequences of token keys, based on lstm predictor
 """
 import itertools
 import numpy as np
+from typing import List
 import config
 import os
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -13,137 +14,129 @@ import keras
 class Controller(object):
 
     def __init__(self, tokens):
-        self.no_of_samples_per_epoch = config.controller["no_of_samples_per_epoch"]
-        self.no_of_layers = config.controller["no_of_layers"]  # v2 handles sequences equal with length
-        self.rnn_dim = config.controller["rnn_dim"]
-        self.rnn_lr = config.controller["rnn_lr"]
-        self.rnn_decay = config.controller["rnn_decay"]
-        self.rnn_no_of_epochs = config.controller["rnn_no_of_epochs"]
-        self.rnn_loss_alpha = config.controller["rnn_loss_alpha"]
-        self.rl_baseline = config.controller["rl_baseline"]
-        self.reward_coefficient = config.controller["reward_coefficient"]
-        self.verbose = config.controller["verbose"]
-        self.outlier_limit = config.latency_predictor["outlier_limit"]
-        self.hardware = config.trainer["hardware"]
-        self.latency_coefficient = config.controller["latency_coefficient"]
-        self.epoch_performance = None
+        self.max_no_of_layers = config.controller["max_no_of_layers"]
+        self.agent_lr = config.controller["agent_lr"]
+        self.min_reward = config.controller["min_reward"]
+        self.min_plays = config.controller["min_plays"]
+        self.max_plays = config.controller["max_plays"]
+        self.alpha = config.controller["alpha"]
+        self.gamma = config.controller["gamma"]
         self.tokens = tokens
-        self.rnn_classes = len(tokens)
-        self.rnn_model = self.controller_rnn()
+        self.len_search_space = len(tokens) + 1
+        self.end_token = list(tokens.keys())[-1]
+        self.model = self.rl_agent()
+        self.states = []
+        self.gradients = []
+        self.rewards = []
+        self.probs = []
 
-    def generate_sequence(self):
-        sequences = []
-        token_keys = list(self.tokens.keys())
-        dense_tokens = [x for x, y in self.tokens.items() if "Dense" in y]
+    def rl_agent(self):
+        model_output_shape = (self.max_no_of_layers-1, self.len_search_space)
+        model = keras.models.Sequential()
+        model.add(keras.layers.Dense(512, input_shape=(self.max_no_of_layers-1,), activation="relu"))
+        model.add(keras.layers.Dense(256, activation="relu"))
+        model.add(keras.layers.Dense(128, activation="relu"))
+        model.add(keras.layers.Dense(64, activation="relu"))
+        model.add(keras.layers.Dense(32, activation="relu"))
+        model.add(keras.layers.Dense(16, activation="relu"))
+        model.add(keras.layers.Dense(16, activation="relu"))
+        model.add(keras.layers.Dense(32, activation="relu"))
+        model.add(keras.layers.Dense(64, activation="relu"))
+        model.add(keras.layers.Dense(128, activation="relu"))
+        model.add(keras.layers.Dense(256, activation="relu"))
+        model.add(keras.layers.Dense(512, activation="relu"))
+        model.add(keras.layers.Dense(model_output_shape[0]*model_output_shape[1], activation="softmax"))
+        model.add(keras.layers.Reshape(model_output_shape))
 
-        sample_seq = 0
-        while sample_seq < self.no_of_samples_per_epoch:
-            sequence = np.zeros((1, 1, self.no_of_layers - 1), dtype="int64")
-            dense_flag = False
-
-            layer = 0
-            while layer < self.no_of_layers-1:
-                distribution = self.rnn_model.predict(sequence)
-                prob = distribution[0][0]
-                selected = np.random.choice(token_keys, size=1, p=prob)[0]
-                if layer == 0 and (selected in dense_tokens or selected == token_keys[-1] or selected == token_keys[-2]):
-                    continue  # no dense, dropout, out_layer on first layer
-                if layer != len(sequence)-1 and selected == token_keys[-1]:
-                    continue  # no out_layer on middle layers
-                if selected in dense_tokens:
-                    dense_flag = True
-                if dense_flag and selected not in dense_tokens:
-                    continue  # avoid conv layer after dense layer
-                if not selected == 0:
-                    sequence[0][0][layer] = selected
-                    layer += 1
-
-            sequence = sequence[0][0].tolist()
-            sequence = sequence + [token_keys[-1]]
-            if sequence not in sequences:
-                sequences.append(sequence)  # no repeated sequence in samples
-                sample_seq += 1
-
-        return sequences
-
-    def controller_rnn(self):
-        main_input = keras.engine.input_layer.Input(shape=(None, self.no_of_layers - 1),
-                                                    batch_shape=None, name="main_input")
-        x = keras.layers.LSTM(self.rnn_dim, return_sequences=True)(main_input)
-        x = keras.layers.LSTM(self.rnn_dim, return_sequences=True)(x)
-        main_output = keras.layers.Dense(self.rnn_classes, activation="softmax", name="main_output")(x)
-        model = keras.models.Model(inputs=[main_input], outputs=[main_output])
-
-        model.compile(loss={"main_output": self.reinforce},
-                      optimizer=keras.optimizers.Adam(lr=self.rnn_lr, decay=self.rnn_decay, clipnorm=1.0))
+        model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=self.agent_lr))
         return model
 
-    def train_controller_rnn(self, epoch_performance):
-        self.epoch_performance = epoch_performance
-        print("Rewards:", self.objective_fn())
-        samples = list(epoch_performance.keys())
-        rnn_x = np.array(samples)[:, :-1].reshape(len(samples), 1, self.no_of_layers - 1)
-        rnn_y = keras.utils.to_categorical(np.array(samples)[:, -1], self.rnn_classes+1).reshape(len(samples),
-                                                                                                 1, self.rnn_classes+1)
-        history = self.rnn_model.fit({'main_input': rnn_x},
-                                     {'main_output': rnn_y},
-                                     epochs=self.rnn_no_of_epochs,
-                                     batch_size=len(rnn_x),
-                                     verbose=self.verbose)
-        lstm_loss_avg = np.average(list(history.history.values())[0])
-        return lstm_loss_avg
+    def get_action(self, state: np.ndarray) -> (List, np.ndarray):
+        true_sequence = False
+        while not true_sequence:
+            actions = []
+            distributions = self.model.predict(state)
+            for distribution in distributions[0]:
+                distribution /= np.sum(distribution)
+                action = np.random.choice(self.len_search_space, 1, p=distribution)[0]
+                actions.append(int(action))
+                if action == self.end_token:
+                    break
+            true_sequence = self.check_sequence(actions+[self.end_token] if self.end_token not in actions else actions)
 
-    def reinforce(self, y_true, y_pred):
-        # rewards = (np.array([i[0] for i in list(self.epoch_performance.values())]) - self.rl_baseline)[np.newaxis].T
-        rewards = (self.objective_fn())[np.newaxis].T
-        discounted_rewards = self.discount_reward(rewards)
-        y_pred = keras.backend.clip(y_pred, 1e-36, 1e36)
-        loss = - keras.backend.log(y_pred) * discounted_rewards[:, None]
-        return loss
+        if len(actions) < self.max_no_of_layers-1:
+            for _ in range((self.max_no_of_layers-1)-len(actions)):
+                actions.append(0)
 
-    def discount_reward(self, rewards):
-        discounted_reward = np.zeros_like(rewards, dtype=np.float32)
-        for t in range(len(rewards)):
-            dis_reward = 0
-            for i, r in enumerate(rewards[t:]):
-                dis_reward = self.rnn_loss_alpha ** (i - t) * r
-            discounted_reward[t] = dis_reward
-        if len(rewards) > 1:
-            discounted_reward = (discounted_reward - discounted_reward.mean()) / discounted_reward.std()
-        return discounted_reward
-    
-    def objective_fn(self):
-        acc = [i[0] for i in list(self.epoch_performance.values())]
-        lat = [i[1] for i in list(self.epoch_performance.values())]
-        lat_mapped = [np.interp(i, [0, self.outlier_limit[self.hardware]], [0, 1]) for i in lat]
-        lat_scaled = [i*self.latency_coefficient for i in lat_mapped]
-        reward = [i-j for i, j in zip(acc, lat_scaled)]
-        reward = np.clip(reward, 0.01, max(reward))
+        return actions, distributions
 
-        reward_exp = self.reward_coefficient*(reward-self.rl_baseline)**3
-        # reward_exp = np.clip(reward_exp, -5, 5)
-        return reward_exp
+    def remember(self, state, actions, prob, reward):
+        model_output_shape = (self.max_no_of_layers-1, self.len_search_space)
+        encoded_action = np.zeros(model_output_shape, np.float32)
+        for i, action in enumerate(actions):
+            encoded_action[i][action] = 1
+
+        self.gradients.append(encoded_action - prob)
+        self.states.append(state)
+        self.rewards.append(reward)
+        self.probs.append(prob)
+
+    def clear_memory(self):
+        self.states.clear()
+        self.gradients.clear()
+        self.rewards.clear()
+        self.probs.clear()
+
+    def get_discounted_rewards(self, rewards_in):
+        discounted_rewards = []
+        cumulative_total_return = 0
+
+        for reward in rewards_in[::-1]:
+            cumulative_total_return = (cumulative_total_return * self.gamma) + reward
+            discounted_rewards.insert(0, cumulative_total_return)
+
+        mean_rewards = np.mean(discounted_rewards)
+        std_rewards = np.std(discounted_rewards)
+        norm_discounted_rewards = (discounted_rewards - mean_rewards) / (std_rewards + 1e-7)
+
+        return norm_discounted_rewards
+
+    def update_policy(self):
+        states_ = np.vstack(self.states)
+
+        gradients_ = np.vstack(self.gradients)
+        rewards_ = np.vstack(self.rewards)
+        discounted_rewards = self.get_discounted_rewards(rewards_)
+        discounted_rewards = discounted_rewards.reshape(discounted_rewards.shape[0],
+                                                        discounted_rewards.shape[1],
+                                                        discounted_rewards.shape[1])
+        gradients_ *= discounted_rewards
+        gradients_ = self.alpha * gradients_ + np.vstack(self.probs)
+
+        history = self.model.train_on_batch(states_, gradients_)
+        self.clear_memory()
+        return history
 
     def generate_sequence_naive(self, mode: str):
         token_keys = list(self.tokens.keys())
         if mode == "b":  # Brute-force
-            space = itertools.permutations(token_keys, self.no_of_layers-1)
+            space = itertools.permutations(token_keys, self.max_no_of_layers-1)
             return space
         if mode == "r":  # Random
             sequence = []
-            for i in range(self.no_of_layers-1):
+            for i in range(self.max_no_of_layers-1):
                 token = np.random.choice(token_keys)
                 sequence.append(token)
             return sequence
         if mode == "r_var_len":
             sequence = []
-            length = np.random.randint(3, self.no_of_layers-1, 1)[0]
+            length = np.random.randint(3, self.max_no_of_layers-1, 1)[0]
             for i in range(length):
                 token = np.random.choice(token_keys)
                 sequence.append(token)
             return sequence
 
-    def check_sequence(self, sequence):
+    def check_sequence(self, sequence: List) -> bool:
         token_keys = list(self.tokens.keys())
         dense_tokens = [x for x, y in self.tokens.items() if "Dense" in y]
 
