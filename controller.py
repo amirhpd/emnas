@@ -54,11 +54,35 @@ class Controller(object):
         model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=self.agent_lr))
         return model
 
-    def get_action(self, state: np.ndarray) -> (List, np.ndarray):
+    def get_all_action(self, state: np.ndarray) -> (List, np.ndarray, bool):
         true_sequence = False
-        cnt = 0
+        actions = []
+        distributions = self.model.predict(state)
+        for distribution in distributions[0]:
+            distribution /= np.sum(distribution)
+            action = np.random.choice(self.len_search_space, 1, p=distribution)[0]
+            action = 1 if action == 0 else action
+            actions.append(int(action))
+            if action == self.end_token:
+                break
+
+        sequence = actions + [self.end_token] if self.end_token not in actions else actions
+        valid_sequence = self.check_sequence(sequence)
+        if valid_sequence:
+            valid_model = self.search_space.create_models(samples=[sequence], model_input_shape=self.model_input_shape)
+            true_sequence = True if (valid_model[0] is not None and valid_sequence is True) else False
+
+        if len(actions) < self.max_no_of_layers - 1:
+            for _ in range((self.max_no_of_layers - 1) - len(actions)):
+                actions.append(0)
+
+        return actions, distributions, true_sequence
+
+    def get_valid_action(self, state: np.ndarray) -> (List, np.ndarray, int):
+        true_sequence = False
+        counter = 0
         while not true_sequence:
-            cnt += 1
+            counter += 1
             actions = []
             distributions = self.model.predict(state)
             for distribution in distributions[0]:
@@ -75,12 +99,11 @@ class Controller(object):
                 valid_model = self.search_space.create_models(samples=[sequence], model_input_shape=self.model_input_shape)
                 true_sequence = True if (valid_model[0] is not None and valid_sequence is True) else False
 
-        # print(cnt)
         if len(actions) < self.max_no_of_layers - 1:
             for _ in range((self.max_no_of_layers - 1) - len(actions)):
                 actions.append(0)
 
-        return actions, distributions
+        return actions, distributions, counter-1
 
     def remember(self, state, actions, prob, reward):
         model_output_shape = (self.max_no_of_layers - 1, self.len_search_space)

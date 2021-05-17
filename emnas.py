@@ -24,6 +24,7 @@ log_path = config.emnas["log_path"]
 max_no_of_layers = config.controller["max_no_of_layers"]
 dynamic_min_reward = config.controller["dynamic_min_reward"]
 variance_threshold = config.controller["variance_threshold"]
+valid_actions = config.controller["valid_actions"]
 
 
 def _plot(history, path):
@@ -170,12 +171,23 @@ def main_ff():
     for episode in range(no_of_episodes):
         done = False
         play_counter = 0
+        invalid_counter = 0
         episode_acc = []
         while not done:
-            play_counter += 1
+            if valid_actions:
+                actions, prob, valid = controller.get_valid_action(sequence)
+                reward = trainer.performance_estimate(actions)
+                play_counter += 1
+                invalid_counter = valid
+            else:
+                actions, prob, valid = controller.get_all_action(sequence)
+                if valid:
+                    reward = trainer.performance_estimate(actions)
+                    play_counter += 1
+                else:
+                    invalid_counter += 1
+                    reward = 0.4
 
-            actions, prob = controller.get_action(sequence)
-            reward = trainer.performance_estimate(actions)
             done = False
             if reward < min_reward and play_counter >= controller.min_plays:
                 done = True
@@ -188,7 +200,7 @@ def main_ff():
             history["accuracy_per_play"].append(reward)
             history["sequence_per_play"].append(sequence)
 
-            if len(episode_acc) >= controller.min_plays and np.var(episode_acc) < variance_threshold:
+            if play_counter >= controller.min_plays and np.var(episode_acc) < variance_threshold:
                 done = True
 
             if done:
@@ -214,6 +226,7 @@ def main_ff():
             "reward_min": round(min_reward, 3),
             "Best accuracy:": max(history["accuracy_per_play"]),
             "Loss": loss_value,
+            "Invalids": invalid_counter,
         }
         for k, v in current_log.items():
             print(k, ":", end=" ")

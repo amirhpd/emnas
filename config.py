@@ -25,6 +25,7 @@ controller = {
     "alpha": 1e-3,  # learning rate in the policy gradient
     "gamma": 0.99,  # decay rate of past observations
     "variance_threshold": 1e-2,
+    "valid_actions": True  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
 }
 latency_predictor = {
     "latency": False,  # enable/disable latency
@@ -39,6 +40,6 @@ emnas = {
     "search_mode": "ff",  # ff, random, bruteforce
     "naive_threshold": 0.65,
     "naive_timeout": 1e6,
-    "no_of_episodes": 100,
+    "no_of_episodes": 20,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }
