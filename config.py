@@ -31,11 +31,10 @@ latency_predictor = {
     "train_epochs": 1000,
 }
 emnas = {
-    "no_of_nas_epochs": 10,
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
-    "search_mode": "ff",  # ff, random, bruteforce
-    "naive_threshold": 0.8,
+    "search_mode": "bruteforce",  # ff, random, bruteforce
+    "naive_threshold": 0.65,
     "naive_timeout": 1e6,
     "no_of_episodes": 5,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"

@@ -28,6 +28,7 @@ class SearchSpace(object):
         self.model_lr = config.search_space["model_lr"]
         self.model_decay = config.search_space["model_decay"]
         self.model_metrics = config.search_space["model_metrics"]
+        self.search_mode = config.emnas["search_mode"]
 
     def generate_token(self) -> Dict:
         ranges = json.load(open("search_space.json"))
@@ -151,7 +152,8 @@ class SearchSpace(object):
                 architecture = self.create_model(sequence=sequence, model_input_shape=model_input_shape)
                 architectures.append(architecture)
             except ValueError as e:
-                print("Skipped:", sequence, "due to:", e)
+                if self.search_mode == "ff":
+                    print("Skipped:", sequence, "due to:", e)
                 architectures.append(None)
 
         return architectures

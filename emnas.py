@@ -13,7 +13,6 @@ import cv2
 
 matplotlib.use('TkAgg')
 
-no_of_nas_epochs = config.emnas["no_of_nas_epochs"]
 model_output_shape = config.emnas["model_output_shape"]
 model_input_shape = config.emnas["model_input_shape"]
 search_mode = config.emnas["search_mode"]
@@ -48,6 +47,7 @@ def _plot(history, path):
 
     fig = plt.figure(figsize=(24, 4))
     bins = int(len(history["accuracy_per_episode"]) / 5)
+    bins = bins if bins > 1 else 1
     plt.hist(history["accuracy_per_episode"], bins=bins, edgecolor="k")
     plt.title("Accuracy distribution per episode")
     plt.xlabel("Accuracy")
@@ -94,6 +94,7 @@ def _plot(history, path):
 
     fig = plt.figure(figsize=(24, 4))
     bins = int(len(history["accuracy_per_play"]) / 5)
+    bins = bins if bins > 1 else 1
     plt.hist(history["accuracy_per_play"], bins=bins, edgecolor="k")
     plt.title("Accuracy distribution per play")
     plt.xlabel("Accuracy")
@@ -158,6 +159,7 @@ def main_ff():
         "best_so_far": [],
     }
     current_logs = []
+    loss_value = 0
 
     sequence = np.random.randint(1, controller.len_search_space, controller.max_no_of_layers - 1,
                                  dtype="int32")[np.newaxis]
@@ -224,73 +226,92 @@ def main_ff():
     print("DONE")
 
 
-# def main_naive():
-#     t1 = time.time()
-#     search_space = SearchSpace(model_output_shape=model_output_shape)
-#     tokens = search_space.generate_token()
-#     controller = Controller(tokens=tokens)
-#     trainer = Trainer(tokens)
-#     result = None
-#     history_result = {}
-#     cnt_valid = 1
-#     cnt_skip = 1
-#
-#     if search_mode == "bruteforce":
-#         space = controller.generate_sequence_naive(mode="b")
-#         for sequence in space:
-#             sequence = sequence + (list(tokens.keys())[-1],)  # add last layer
-#             if not controller.check_sequence(sequence):
-#                 cnt_skip += 1
-#                 continue
-#             cnt_valid += 1
-#             architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
-#             epoch_performance = trainer.train_models(samples=[sequence], architectures=[architecture])
-#             history_result.update(epoch_performance)
-#             if [i[0] for i in list(epoch_performance.values())][0] >= naive_threshold:
-#                 result = epoch_performance
-#                 break
-#
-#     if search_mode == "random":
-#         watchdog = 0
-#         while watchdog < naive_timeout:
-#             watchdog += 1
-#             sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
-#             if (tuple(sequence) in list(history_result.keys())) or (not controller.check_sequence(sequence)):
-#                 cnt_skip += 1
-#                 continue
-#             cnt_valid += 1
-#             architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
-#             epoch_performance = trainer.train_models(samples=[sequence], architectures=architecture)
-#             history_result.update(epoch_performance)
-#             if [i[0] for i in list(epoch_performance.values())][0] >= naive_threshold:
-#                 result = epoch_performance
-#                 break
-#
-#     t2 = round(time.time() - t1, 2)
-#     best_translated = search_space.translate_sequence(list(result.keys())[0])
-#     if result:
-#         print("Found architecture:")
-#         print(best_translated)
-#         print(f"With accuracy: {round([i[0] for i in list(result.values())][0], 2)} and latency "
-#               f"{round([i[1] for i in list(result.values())][0], 2)} ms "
-#               f"after checking {cnt_valid} sequences and skipping {cnt_skip} sequences.")
-#         print("NAS done in", t2, "sec")
-#     else:
-#         print(f"No architecture with accuracy >= {naive_threshold} found.")
-#         print("NAS done in", t2, "sec")
-#
-#     acc_average = np.average([i[0] for i in list(result.values())][0])
-#     lat_average = np.average([i[0] for i in list(result.values())][0])
-#     final_info = [best_translated, list(result.values())[0], acc_average, lat_average, t2, cnt_valid, cnt_skip]
-#
-#     img = plot_image(all_lstm_loss=[0], all_avg_acc=[0], all_avg_lat=[0], all_result=history_result)
-#     save_logs(all_lstm_loss=[0], all_avg_acc=[0], all_avg_lat=[0], all_result=history_result,
-#               final_result=final_info, image=img)
+def main_naive():
+    t1 = time.time()
+    search_space = SearchSpace(model_output_shape=model_output_shape)
+    tokens = search_space.generate_token()
+    controller = Controller(tokens=tokens)
+    trainer = Trainer(tokens)
+    cnt_valid = 1
+    cnt_skip = 1
+    result = False
+
+    history = {
+        "accuracy_per_play": [],
+        "sequence_per_play": [],
+        "sequence_per_episode": [],
+        "accuracy_per_episode": [],
+        "avg_accuracy_per_episode": [],
+        "loss": [],
+        "play_counts": [],
+        "min_max": [],
+        "best_so_far": [],
+    }
+    current_logs = []
+    sequence = []
+    accuracy = 0
+
+    if search_mode == "random":
+        watchdog = 0
+        while watchdog < naive_timeout:
+            watchdog += 1
+            sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
+            if (sequence in history["sequence_per_play"]) or (not controller.check_sequence(sequence)):
+                cnt_skip += 1
+                continue
+            architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
+            if not architecture:
+                cnt_skip += 1
+                continue
+
+            accuracy = trainer.performance_estimate(sequence=sequence[:-1])
+            cnt_valid += 1
+            history["accuracy_per_play"].append(accuracy)
+            history["sequence_per_play"].append(sequence)
+            print(f"Sequence: {sequence} \t\t Accuracy: {accuracy} \t Explored: {cnt_valid} \t Skipped: {cnt_skip}")
+            if accuracy >= naive_threshold:
+                result = True
+                break
+
+    if search_mode == "bruteforce":
+        space = controller.generate_sequence_naive(mode="b")
+        for sequence in space:
+            sequence = sequence + (list(tokens.keys())[-1],)  # add last layer
+            if not controller.check_sequence(sequence):
+                cnt_skip += 1
+                continue
+            architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
+            if not architecture:
+                cnt_skip += 1
+                continue
+
+            accuracy = trainer.performance_estimate(sequence=sequence[:-1])
+            cnt_valid += 1
+            history["accuracy_per_play"].append(accuracy)
+            history["sequence_per_play"].append(sequence)
+            print(f"Sequence: {sequence} \t\t Accuracy: {accuracy} \t Explored: {cnt_valid} \t Skipped: {cnt_skip}")
+            if accuracy >= naive_threshold:
+                result = True
+                break
+
+    if result:
+        best_result = f"Best sequence: {sequence} \n" \
+                      f"with accuracy: {accuracy}" \
+                      f" \t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t In {int(time.time() - t1)} sec. \n" \
+                      f"Total average accuracy: {np.average(history['accuracy_per_play'])} " \
+                      f"\t Accuracy threshold: {naive_threshold}"
+    else:
+        best_result = f"No architecture with accuracy >= {naive_threshold} found. \n" \
+                      f"\t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t In {int(time.time() - t1)} sec. \n"
+
+    print(best_result)
+    save_logs(history, current_logs, best_result)
+    print("DONE")
 
 
 if __name__ == '__main__':
     print("MODE:", search_mode, "HARDWARE:", hardware)
     if search_mode == "ff":
         main_ff()
-    # else:
-    #     main_naive()
+    else:
+        main_naive()
