@@ -21,6 +21,9 @@ naive_timeout = config.emnas["naive_timeout"]
 hardware = config.trainer["hardware"]
 no_of_episodes = config.emnas["no_of_episodes"]
 log_path = config.emnas["log_path"]
+max_no_of_layers = config.controller["max_no_of_layers"]
+dynamic_min_reward = config.controller["dynamic_min_reward"]
+variance_threshold = config.controller["variance_threshold"]
 
 
 def _plot(history, path):
@@ -160,6 +163,7 @@ def main_ff():
     }
     current_logs = []
     loss_value = 0
+    min_reward = controller.min_reward
 
     sequence = np.random.randint(1, controller.len_search_space, controller.max_no_of_layers - 1,
                                  dtype="int32")[np.newaxis]
@@ -173,7 +177,7 @@ def main_ff():
             actions, prob = controller.get_action(sequence)
             reward = trainer.performance_estimate(actions)
             done = False
-            if reward < controller.min_reward and play_counter >= controller.min_plays:
+            if reward < min_reward and play_counter >= controller.min_plays:
                 done = True
             if play_counter >= controller.max_plays:
                 done = True
@@ -184,11 +188,11 @@ def main_ff():
             history["accuracy_per_play"].append(reward)
             history["sequence_per_play"].append(sequence)
 
-            if len(episode_acc) >= controller.min_plays and np.var(episode_acc) < 1e-2:
+            if len(episode_acc) >= controller.min_plays and np.var(episode_acc) < variance_threshold:
                 done = True
 
             if done:
-                history["min_max"].append([controller.min_reward, max(episode_acc)])
+                history["min_max"].append([min_reward, max(episode_acc)])
                 history["sequence_per_episode"].append(sequence)
                 history["accuracy_per_episode"].append(reward)
                 history["play_counts"].append(play_counter)
@@ -197,6 +201,9 @@ def main_ff():
                 sequence = history["sequence_per_play"][
                     history["accuracy_per_play"].index(max(history["accuracy_per_play"]))]
 
+                if dynamic_min_reward:
+                    min_reward = np.average(episode_acc) if np.average(episode_acc) > min_reward else min_reward
+
                 loss_value = controller.update_policy()
                 history["loss"].append(loss_value)
 
@@ -204,7 +211,7 @@ def main_ff():
             "Episode": episode + 1,
             "Plays:": play_counter,
             "Max accuracy": round(max(episode_acc), 3),
-            "reward_min": round(controller.min_reward, 3),
+            "reward_min": round(min_reward, 3),
             "Best accuracy:": max(history["accuracy_per_play"]),
             "Loss": loss_value,
         }
@@ -264,11 +271,16 @@ def main_naive():
                 cnt_skip += 1
                 continue
 
-            accuracy = trainer.performance_estimate(sequence=sequence[:-1])
+            sequence = sequence[:-1]
+            if len(sequence) < max_no_of_layers-1:
+                for _ in range((max_no_of_layers-1)-len(sequence)):
+                    sequence.append(0)
+
+            accuracy = trainer.performance_estimate(sequence=sequence)
             cnt_valid += 1
             history["accuracy_per_play"].append(accuracy)
             history["sequence_per_play"].append(sequence)
-            print(f"Sequence: {sequence} \t\t Accuracy: {accuracy} \t Explored: {cnt_valid} \t Skipped: {cnt_skip}")
+            print(f"Accuracy: {str(accuracy)} \t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t Sequence: {sequence}")
             if accuracy >= naive_threshold:
                 result = True
                 break
@@ -289,7 +301,7 @@ def main_naive():
             cnt_valid += 1
             history["accuracy_per_play"].append(accuracy)
             history["sequence_per_play"].append(sequence)
-            print(f"Sequence: {sequence} \t\t Accuracy: {accuracy} \t Explored: {cnt_valid} \t Skipped: {cnt_skip}")
+            print(f"Accuracy: {str(accuracy)} \t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t Sequence: {sequence}")
             if accuracy >= naive_threshold:
                 result = True
                 break

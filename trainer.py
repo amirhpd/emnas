@@ -22,11 +22,11 @@ class Trainer(object):
         self.image_size = config.emnas["model_input_shape"][:2]
         self.train_batch = None
         self.validation_batch = None
-        self.read_dataset()
-        self.latency_predictor = LatencyPredictor()
+        # self.read_dataset()
+        # self.latency_predictor = LatencyPredictor()
         self.hardware = config.trainer["hardware"]  # sipeed, jevois
         self.outlier_limit = config.latency_predictor["outlier_limit"]
-        self.acc_model = keras.models.load_model("misc/reinforcement_learning/accuracy_predictor_15.h5")
+        self.acc_model = keras.models.load_model(config.trainer["predictor_path"])
         self.tokens = tokens
         self.len_search_space = len(tokens) + 1
         self.end_token = list(tokens.keys())[-1]
