@@ -8,6 +8,7 @@ search_space = {
 }
 trainer = {
     "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
+    "predictor_path": "misc/reinforcement_learning/accuracy_predictor_15.h5",
     "model_validation_split": 0.1,
     "model_batch_size": 10,
     "model_epochs": 5,
@@ -15,17 +16,16 @@ trainer = {
     "hardware": "sipeed",  # sipeed, jevois
 }
 controller = {
-    "no_of_samples_per_epoch": 10,
-    "no_of_layers": 16,
-    "rnn_dim": 100,
-    "rnn_lr": 0.01,
-    "rnn_decay": 0.1,
-    "rnn_no_of_epochs": 200,
-    "rnn_loss_alpha": 0.9,
-    "rl_baseline": 0.9,
-    "reward_coefficient": 1000,
-    "latency_coefficient": 0.5,
-    "verbose": 0,
+    "max_no_of_layers": 15,
+    "agent_lr": 1e-4,
+    "min_reward": 0.55,
+    "dynamic_min_reward": False,
+    "min_plays": 5,
+    "max_plays": 20,
+    "alpha": 1e-3,  # learning rate in the policy gradient
+    "gamma": 0.99,  # decay rate of past observations
+    "variance_threshold": 1e-2,
+    "valid_actions": True  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
 }
 latency_predictor = {
     "latency": False,  # enable/disable latency
@@ -35,10 +35,11 @@ latency_predictor = {
     "train_epochs": 1000,
 }
 emnas = {
-    "no_of_nas_epochs": 10,
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
-    "search_mode": "rnn",  # rnn, random, bruteforce
-    "naive_threshold": 0.8,
+    "search_mode": "ff",  # ff, random, bruteforce
+    "naive_threshold": 0.65,
     "naive_timeout": 1e6,
+    "no_of_episodes": 20,
+    "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }

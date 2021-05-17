@@ -28,6 +28,7 @@ class SearchSpace(object):
         self.model_lr = config.search_space["model_lr"]
         self.model_decay = config.search_space["model_decay"]
         self.model_metrics = config.search_space["model_metrics"]
+        self.search_mode = config.emnas["search_mode"]
 
     def generate_token(self) -> Dict:
         ranges = json.load(open("search_space.json"))
@@ -55,39 +56,6 @@ class SearchSpace(object):
             dense_token[dense_count[-1]+2] = (self.model_output_shape, "softmax")
 
         tokens = {**cnn_token, **dense_token}
-
-        # keys as coded int
-        # space_cnn = [layers, filters, kernel_sizes, strides, paddings, activations]
-        # cnn_params = list(itertools.product(*space_cnn))
-        # elements = [item for sublist in space_cnn for item in sublist]
-        # elements = list(collections.OrderedDict.fromkeys(elements))
-        # elements_dict = dict(zip(elements, range(10, len(elements)+11)))
-        # cnn_token = {}
-        # for layer in cnn_params:
-        #     token = ""
-        #     for param in layer:
-        #         letter = str(elements_dict[param])
-        #         token += letter
-        #     cnn_token.update({int(token): layer})
-        #
-        # space_dense = [["Dense"], nodes, activations]
-        # dense_params = list(itertools.product(*space_dense))
-        # elements_d = [item for sublist in space_dense for item in sublist]
-        # elements_d = list(collections.OrderedDict.fromkeys(elements_d))
-        # elements_d_dict = dict(zip(elements_d, range(10, len(elements_d)+11)))
-        # dense_token = {}
-        # for layer in dense_params:
-        #     token = ""
-        #     for param in layer:
-        #         letter = str(elements_d_dict[param])
-        #         token += letter
-        #     dense_token.update({int(token): layer})
-        #
-        # tokens = {**cnn_token, **dense_token, 1: ("dropout", self.model_dropout)}
-        # if self.model_output_shape == 1:
-        #     tokens[2] = (1, "sigmoid")
-        # else:
-        #     tokens[2] = (self.model_output_shape, "softmax")
 
         return tokens
 
@@ -151,7 +119,8 @@ class SearchSpace(object):
                 architecture = self.create_model(sequence=sequence, model_input_shape=model_input_shape)
                 architectures.append(architecture)
             except ValueError as e:
-                print("Skipped:", sequence, "due to:", e)
+                # if self.search_mode == "ff":
+                #     print("Skipped:", sequence, "due to:", e)
                 architectures.append(None)
 
         return architectures
