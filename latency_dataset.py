@@ -31,7 +31,7 @@ def generate_models():
     i = 0
     while i < no_of_examples:
         sequence = controller.generate_sequence_naive(mode="r_var_len") + [list(tokens.keys())[-1]]
-        if (sequence in architectures) or (not controller.check_sequence(sequence)):
+        if (sequence in architectures) or (not search_space.check_sequence(sequence)):
             continue
         try:
             architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)

@@ -67,7 +67,7 @@ class Controller(object):
                 break
 
         sequence = actions + [self.end_token] if self.end_token not in actions else actions
-        valid_sequence = self.check_sequence(sequence)
+        valid_sequence = self.search_space.check_sequence(sequence)
         if valid_sequence:
             valid_model = self.search_space.create_models(samples=[sequence], model_input_shape=self.model_input_shape)
             true_sequence = True if (valid_model[0] is not None and valid_sequence is True) else False
@@ -94,7 +94,7 @@ class Controller(object):
                     break
 
             sequence = actions + [self.end_token] if self.end_token not in actions else actions
-            valid_sequence = self.check_sequence(sequence)
+            valid_sequence = self.search_space.check_sequence(sequence)
             if valid_sequence:
                 valid_model = self.search_space.create_models(samples=[sequence], model_input_shape=self.model_input_shape)
                 true_sequence = True if (valid_model[0] is not None and valid_sequence is True) else False
@@ -171,24 +171,3 @@ class Controller(object):
                 token = np.random.choice(token_keys)
                 sequence.append(token)
             return sequence
-
-    def check_sequence(self, sequence: List) -> bool:
-        token_keys = list(self.tokens.keys())
-        dense_tokens = [x for x, y in self.tokens.items() if "Dense" in y]
-
-        dense_flag = False
-        for i, token in enumerate(sequence):
-            if i == 0 and (token in dense_tokens or token == token_keys[-1] or token == token_keys[-2]):
-                return False
-            if i != len(sequence) - 1 and token == token_keys[-1]:
-                return False
-            if i == len(sequence) - 1 and token != token_keys[-1]:
-                return False
-            if token in dense_tokens:
-                dense_flag = True
-            if dense_flag and i != len(sequence) - 1 and token not in dense_tokens:
-                return False
-
-        if not len(sequence):
-            return False
-        return True

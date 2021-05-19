@@ -276,7 +276,7 @@ def main_naive():
         while watchdog < naive_timeout:
             watchdog += 1
             sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
-            if (sequence in history["sequence_per_play"]) or (not controller.check_sequence(sequence)):
+            if (sequence in history["sequence_per_play"]) or (not search_space.check_sequence(sequence)):
                 cnt_skip += 1
                 continue
             architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
@@ -302,7 +302,7 @@ def main_naive():
         space = controller.generate_sequence_naive(mode="b")
         for sequence in space:
             sequence = sequence + (list(tokens.keys())[-1],)  # add last layer
-            if not controller.check_sequence(sequence):
+            if not search_space.check_sequence(sequence):
                 cnt_skip += 1
                 continue
             architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
