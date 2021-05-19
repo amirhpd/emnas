@@ -1,7 +1,7 @@
 import keras
 import numpy as np
 from controller import Controller
-from emnas import plot_image, save_logs
+# from emnas import plot_image, save_logs
 from latency_predictor import LatencyPredictor
 from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
@@ -135,13 +135,15 @@ def test_convert_kmodel():
 
 def test_search_space_mobilenets():
     search_space = SearchSpaceMn(model_output_shape=2)
-    # token = search_space.generate_token()
+    token = search_space.generate_token()
 
     sample_sequence = [1, 25, 29, 34]
     mobnet_sequence = [4, 26, 5, 29, 27, 1, 26, 9, 29, 27, 13, 26, 13, 29, 27, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
                        17, 29, 27, 21, 26, 21, 34]
-    # translated_sequence = search_space.translate_sequence(sample_sequence)
+    valid_sequence = search_space.check_sequence(sample_sequence)
+    translated_sequence = search_space.translate_sequence(sample_sequence)
 
-    model = search_space.create_model(sequence=sample_sequence, model_input_shape=(128, 128, 3))
+    # model = search_space.create_model(sequence=mobnet_sequence, model_input_shape=(128, 128, 3))
+    model = search_space.create_models(samples=[mobnet_sequence], model_input_shape=(128, 128, 3))[0]
     # keras.utils.plot_model(model, to_file="model.png", show_shapes=True)
     print(model.summary())

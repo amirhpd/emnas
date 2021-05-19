@@ -1,4 +1,5 @@
 search_space = {
+    "mode": "normal",  # normal, MobileNets
     "model_dropout": 0.2,
     "model_loss_function": "categorical_crossentropy",
     "model_optimizer": "Adam",

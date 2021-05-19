@@ -10,18 +10,23 @@ import keras
 from camera_drive import SipeedCamera
 from controller import Controller
 from search_space import SearchSpace
+from search_space_mn import SearchSpaceMn
 
 
 no_of_examples = 3000
 kmodel_limit = 3847
-latency_dataset = "latency_datasets/Dataset_5"
+latency_dataset = "latency_datasets/Dataset_6"
 model_input_shape = config.emnas["model_input_shape"]
 
 
 def generate_models():
+    if config.search_space["mode"] == "MobileNets":
+        search_space = SearchSpaceMn(model_output_shape=2)
+    else:
+        search_space = SearchSpace(model_output_shape=2)
+
     if os.listdir(latency_dataset):
         raise ValueError("Dataset folder is not empty.")
-    search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
     architectures = []
@@ -30,7 +35,7 @@ def generate_models():
 
     i = 0
     while i < no_of_examples:
-        sequence = controller.generate_sequence_naive(mode="r_var_len") + [list(tokens.keys())[-1]]
+        sequence = controller.generate_sequence_naive(mode="r_var_len")
         if (sequence in architectures) or (not search_space.check_sequence(sequence)):
             continue
         try:

@@ -124,3 +124,20 @@ class SearchSpaceMn(object):
                 architectures.append(None)
 
         return architectures
+
+    def check_sequence(self, sequence: List) -> bool:
+        tokens = self.generate_token()
+        zero_pad_tokens = [x for x, y in tokens.items() if "ZeroPadding2D" in y]
+        end_tokens = [x for x, y in tokens.items() if "end" in y]
+
+        for i, token in enumerate(sequence):
+            if i == 0 and (token in zero_pad_tokens or token in end_tokens):
+                return False
+            if i != len(sequence) - 1 and token in end_tokens:
+                return False
+            if i == len(sequence) - 1 and token not in end_tokens:
+                return False
+
+        if not len(sequence):
+            return False
+        return True

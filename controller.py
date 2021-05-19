@@ -7,6 +7,7 @@ import numpy as np
 from typing import List
 import config
 from search_space import SearchSpace
+from search_space_mn import SearchSpaceMn
 import os
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
@@ -31,7 +32,11 @@ class Controller(object):
         self.gradients = []
         self.rewards = []
         self.probs = []
-        self.search_space = SearchSpace(config.emnas["model_output_shape"])
+        if config.search_space["mode"] == "MobileNets":
+            self.search_space = SearchSpaceMn(config.emnas["model_output_shape"])
+        else:
+            self.search_space = SearchSpace(config.emnas["model_output_shape"])
+
 
     def rl_agent(self):
         model_output_shape = (self.max_no_of_layers - 1, self.len_search_space)
@@ -170,4 +175,5 @@ class Controller(object):
             for i in range(length):
                 token = np.random.choice(token_keys)
                 sequence.append(token)
+            sequence.append(token_keys[-1])
             return sequence

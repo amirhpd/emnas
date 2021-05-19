@@ -1,6 +1,7 @@
 import pandas as pd
 from controller import Controller
 from search_space import SearchSpace
+from search_space_mn import SearchSpaceMn
 from trainer import Trainer
 import config
 import numpy as np
@@ -25,6 +26,14 @@ max_no_of_layers = config.controller["max_no_of_layers"]
 dynamic_min_reward = config.controller["dynamic_min_reward"]
 variance_threshold = config.controller["variance_threshold"]
 valid_actions = config.controller["valid_actions"]
+
+if config.search_space["mode"] == "MobileNets":
+    search_space = SearchSpaceMn(model_output_shape=model_output_shape)
+else:
+    search_space = SearchSpace(model_output_shape=model_output_shape)
+tokens = search_space.generate_token()
+controller = Controller(tokens=tokens)
+trainer = Trainer(tokens)
 
 
 def _plot(history, path):
@@ -146,10 +155,6 @@ def save_logs(history, current_logs, best_result):
 
 def main_ff():
     t1 = time.time()
-    search_space = SearchSpace(model_output_shape=model_output_shape)
-    tokens = search_space.generate_token()
-    controller = Controller(tokens=tokens)
-    trainer = Trainer(tokens)
 
     history = {
         "accuracy_per_play": [],
@@ -248,10 +253,6 @@ def main_ff():
 
 def main_naive():
     t1 = time.time()
-    search_space = SearchSpace(model_output_shape=model_output_shape)
-    tokens = search_space.generate_token()
-    controller = Controller(tokens=tokens)
-    trainer = Trainer(tokens)
     cnt_valid = 1
     cnt_skip = 1
     result = False
