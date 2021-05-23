@@ -171,7 +171,7 @@ class Controller(object):
             return sequence
         if mode == "r_var_len":
             sequence = []
-            length = np.random.randint(3, self.max_no_of_layers - 1, 1)[0]
+            length = np.random.randint(12-1, self.max_no_of_layers, 1)[0]
             for i in range(length):
                 token = np.random.choice(token_keys)
                 sequence.append(token)

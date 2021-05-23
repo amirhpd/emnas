@@ -13,8 +13,8 @@ from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
 
 
-no_of_examples = 3000
-kmodel_limit = 3847
+no_of_examples = 5
+kmodel_limit = 2000
 latency_dataset = "latency_datasets/Dataset_6"
 model_input_shape = config.emnas["model_input_shape"]
 
@@ -29,22 +29,22 @@ def generate_models():
         raise ValueError("Dataset folder is not empty.")
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
-    architectures = []
+    sequences = []
     df = pd.DataFrame(columns=["model", "params [K]", "sipeed_latency [ms]", "kmodel_memory [KB]", "cpu_latency [ms]",
                                "accuracy", "token_sequence", "length", "model_info"])
 
     i = 0
     while i < no_of_examples:
         sequence = controller.generate_sequence_naive(mode="r_var_len")
-        if (sequence in architectures) or (not search_space.check_sequence(sequence)):
+        if (sequence in sequences) or (not search_space.check_sequence(sequence)):
             continue
         try:
             architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
         except Exception as e:
-            print(sequence)
-            print(e)
+            # print(sequence)
+            # print(e)
             continue
-        architectures.append(architecture)
+        sequences.append(sequence)
         i += 1
         i_str = format(i, f"0{len(str(no_of_examples))}d")  # add 0s
         file_name = f"model_{i_str}"
@@ -55,6 +55,7 @@ def generate_models():
         df = df.append({"model": file_name, "params [K]": model_params,
                         "token_sequence": sequence, "length": len(sequence),
                         "model_info": model_info_json}, ignore_index=True)
+        print(file_name, ", length:", len(sequence))
 
     df.to_csv(f"{latency_dataset}/table.csv", index=False)
 
@@ -131,7 +132,7 @@ def measure_cpu_latency():
 
 
 if __name__ == '__main__':
-    step = 1
+    step = 2
     sipeed_cam = SipeedCamera()
 
     if step == 1:

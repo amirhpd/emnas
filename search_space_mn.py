@@ -38,14 +38,14 @@ class SearchSpaceMn(object):
         kernel_sizes = [tuple(i) for i in ranges["Conv2D"]["kernel_sizes"]]
         strides = [tuple(i) for i in ranges["Conv2D"]["strides"]]
         c2d_params = list(itertools.product(*[["Conv2D"], filters, kernel_sizes, strides, paddings]))
-        c2d_count = range(1, len(c2d_params)+1)
+        c2d_count = range(1, len(c2d_params) + 1)
         c2d_token = dict(zip(c2d_count, c2d_params))
 
         paddings = ranges["DepthwiseConv2D"]["paddings"]
         kernel_sizes = [tuple(i) for i in ranges["DepthwiseConv2D"]["kernel_sizes"]]
         strides = [tuple(i) for i in ranges["DepthwiseConv2D"]["strides"]]
         dw_params = list(itertools.product(*[["DepthwiseConv2D"], kernel_sizes, strides, paddings]))
-        dw_count = range(c2d_count[-1]+1, c2d_count[-1] + len(dw_params)+1)
+        dw_count = range(c2d_count[-1] + 1, c2d_count[-1] + len(dw_params) + 1)
         dw_token = dict(zip(dw_count, dw_params))
 
         dropouts = ranges["General"]["dropout"]
@@ -59,7 +59,7 @@ class SearchSpaceMn(object):
         else:
             for drp in dropouts:
                 general_params.append(("end", drp, self.model_output_shape, "softmax"))
-        general_count = range(dw_count[-1]+1, dw_count[-1] + len(general_params)+1)
+        general_count = range(dw_count[-1] + 1, dw_count[-1] + len(general_params) + 1)
         general_token = dict(zip(general_count, general_params))
 
         tokens = {**c2d_token, **dw_token, **general_token}
@@ -75,37 +75,39 @@ class SearchSpaceMn(object):
 
     def create_model(self, sequence, model_input_shape):
         layers_info = self.translate_sequence(sequence)
-        model = Sequential()
-        model.add(keras.layers.InputLayer(input_shape=model_input_shape))
+
+        in_layer = keras.layers.Input(shape=model_input_shape)
+        x = in_layer
 
         for layer in layers_info:
             if layer[0] == "Conv2D":
-                model.add(keras.layers.Conv2D(filters=layer[1], kernel_size=layer[2], strides=layer[3],
-                                              padding=layer[4], activation="linear"))
-                model.add(keras.layers.BatchNormalization(axis=[3]))
-                model.add(keras.layers.ReLU(max_value=6))
+                x = keras.layers.Conv2D(filters=layer[1], kernel_size=layer[2], strides=layer[3],
+                                        padding=layer[4], activation="linear")(x)
+                x = keras.layers.BatchNormalization(axis=[3])(x)
+                x = keras.layers.ReLU(max_value=6)(x)
 
             elif layer[0] == "DepthwiseConv2D":
-                model.add(keras.layers.DepthwiseConv2D(kernel_size=layer[1], strides=layer[2], padding=layer[3],
-                                                       activation="linear"))
-                model.add(keras.layers.BatchNormalization(axis=[3]))
-                model.add(keras.layers.ReLU(max_value=6))
+                x = keras.layers.DepthwiseConv2D(kernel_size=layer[1], strides=layer[2], padding=layer[3],
+                                                 activation="linear")(x)
+                x = keras.layers.BatchNormalization(axis=[3])(x)
+                x = keras.layers.ReLU(max_value=6)(x)
 
             elif layer[0] == "ZeroPadding2D":
-                model.add(keras.layers.ZeroPadding2D(padding=layer[1]))
+                x = keras.layers.ZeroPadding2D(padding=layer[1])(x)
 
             elif layer[0] == "end":
-                model.add(keras.layers.GlobalAvgPool2D(data_format="channels_last"))
-                model.add(keras.layers.Reshape(target_shape=(1, 1, model.layers[-1].output_shape[1])))
-                model.add(keras.layers.Dropout(rate=layer[1]))
-                model.add(keras.layers.Conv2D(filters=layer[2], kernel_size=(1, 1), strides=(1, 1), padding="same",
-                                              activation="linear"))
-                model.add(keras.layers.Reshape(target_shape=(layer[2],)))
-                model.add(keras.layers.Activation(layer[3]))
+                x = keras.layers.GlobalAvgPool2D(data_format="channels_last")(x)
+                x = tf.reshape(x, (-1, 1, 1, x.shape[1]))
+                x = keras.layers.Dropout(rate=layer[1])(x)
+                x = keras.layers.Conv2D(filters=layer[2], kernel_size=(1, 1), strides=(1, 1), padding="same",
+                                        activation="linear")(x)
+                x = tf.reshape(x, (-1, layer[2],))
+                out_layer = keras.layers.Activation(layer[3])(x)
 
             else:
                 raise ValueError(f"emnas: Layer Type Unknown {str(layer)}")
 
+        model = keras.models.Model(inputs=in_layer, outputs=out_layer)
         if self.model_output_shape == 1:
             self.model_loss_function = "binary_crossentropy"
         optimizer = getattr(optimizers, self.model_optimizer)(lr=self.model_lr, decay=self.model_decay)

@@ -1,5 +1,5 @@
 search_space = {
-    "mode": "normal",  # normal, MobileNets
+    "mode": "MobileNets",  # normal, MobileNets
     "model_dropout": 0.2,
     "model_loss_function": "categorical_crossentropy",
     "model_optimizer": "Adam",
@@ -12,12 +12,12 @@ trainer = {
     "predictor_path": "misc/reinforcement_learning/accuracy_predictor_15.h5",
     "model_validation_split": 0.1,
     "model_batch_size": 10,
-    "model_epochs": 5,
-    "verbose": 0,
+    "model_epochs": 1,
+    "verbose": 1,
     "hardware": "sipeed",  # sipeed, jevois
 }
 controller = {
-    "max_no_of_layers": 15,
+    "max_no_of_layers": 32,
     "agent_lr": 1e-4,
     "min_reward": 0.55,
     "dynamic_min_reward": False,
