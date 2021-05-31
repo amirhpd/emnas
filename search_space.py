@@ -124,3 +124,25 @@ class SearchSpace(object):
                 architectures.append(None)
 
         return architectures
+
+    def check_sequence(self, sequence: List) -> bool:
+        tokens = self.generate_token()
+        token_keys = list(tokens.keys())
+        dense_tokens = [x for x, y in tokens.items() if "Dense" in y]
+
+        dense_flag = False
+        for i, token in enumerate(sequence):
+            if i == 0 and (token in dense_tokens or token == token_keys[-1] or token == token_keys[-2]):
+                return False
+            if i != len(sequence) - 1 and token == token_keys[-1]:
+                return False
+            if i == len(sequence) - 1 and token != token_keys[-1]:
+                return False
+            if token in dense_tokens:
+                dense_flag = True
+            if dense_flag and i != len(sequence) - 1 and token not in dense_tokens:
+                return False
+
+        if not len(sequence):
+            return False
+        return True

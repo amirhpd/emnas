@@ -10,36 +10,41 @@ import keras
 from camera_drive import SipeedCamera
 from controller import Controller
 from search_space import SearchSpace
+from search_space_mn import SearchSpaceMn
 
 
-no_of_examples = 3000
-kmodel_limit = 3847
-latency_dataset = "latency_datasets/Dataset_5"
+no_of_examples = 1000
+kmodel_limit = 2000
+latency_dataset = "latency_datasets/Dataset_7"
 model_input_shape = config.emnas["model_input_shape"]
 
 
 def generate_models():
+    if config.search_space["mode"] == "MobileNets":
+        search_space = SearchSpaceMn(model_output_shape=2)
+    else:
+        search_space = SearchSpace(model_output_shape=2)
+
     if os.listdir(latency_dataset):
         raise ValueError("Dataset folder is not empty.")
-    search_space = SearchSpace(model_output_shape=2)
     tokens = search_space.generate_token()
     controller = Controller(tokens=tokens)
-    architectures = []
+    sequences = []
     df = pd.DataFrame(columns=["model", "params [K]", "sipeed_latency [ms]", "kmodel_memory [KB]", "cpu_latency [ms]",
                                "accuracy", "token_sequence", "length", "model_info"])
 
     i = 0
     while i < no_of_examples:
-        sequence = controller.generate_sequence_naive(mode="r_var_len") + [list(tokens.keys())[-1]]
-        if (sequence in architectures) or (not controller.check_sequence(sequence)):
+        sequence = controller.generate_sequence_naive(mode="r_var_len")
+        if (sequence in sequences) or (not search_space.check_sequence(sequence)):
             continue
         try:
             architecture = search_space.create_model(sequence=sequence, model_input_shape=model_input_shape)
         except Exception as e:
-            print(sequence)
-            print(e)
+            # print(sequence)
+            # print(e)
             continue
-        architectures.append(architecture)
+        sequences.append(sequence)
         i += 1
         i_str = format(i, f"0{len(str(no_of_examples))}d")  # add 0s
         file_name = f"model_{i_str}"
@@ -50,6 +55,7 @@ def generate_models():
         df = df.append({"model": file_name, "params [K]": model_params,
                         "token_sequence": sequence, "length": len(sequence),
                         "model_info": model_info_json}, ignore_index=True)
+        print(file_name, ", length:", len(sequence))
 
     df.to_csv(f"{latency_dataset}/table.csv", index=False)
 
@@ -74,20 +80,16 @@ def measure_sipeed_latency():
                 latency = sipeed_cam.get_latency(model_file=kmodel)
             except Exception as e:
                 print(kmodel_name, "Latency measurement failed.")
-                print(e)
-                continue
+                df.at[kmodel_index, "sipeed_latency [ms]"] = 0
+                df.to_csv(f"{latency_dataset}/table.csv", index=False)
+                raise ValueError(e)
         else:
             print(kmodel_name, "Too large.")
-            latency = pd.np.nan
+            latency = 0
 
         df.at[kmodel_index, "sipeed_latency [ms]"] = round(latency, 2)
-        print(kmodel_name, "Latency measurement on Sipeed done.", time.time()-t1, "sec")
-
-        if (i+1) % 10 == 0:
-            print("Saving ..")
-            df.to_csv(f"{latency_dataset}/table.csv", index=False)  # save to hdd every 10 iter.
-
-    df.to_csv(f"{latency_dataset}/table.csv", index=False)
+        df.to_csv(f"{latency_dataset}/table.csv", index=False)
+        print(kmodel_name, "Latency measurement on Sipeed done.", round(time.time()-t1, 1), "sec")
 
 
 def _get_test_images(no_of_images):
@@ -126,7 +128,7 @@ def measure_cpu_latency():
 
 
 if __name__ == '__main__':
-    step = 1
+    step = 2
     sipeed_cam = SipeedCamera()
 
     if step == 1:

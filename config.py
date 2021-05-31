@@ -1,4 +1,5 @@
 search_space = {
+    "mode": "MobileNets",  # normal, MobileNets
     "model_dropout": 0.2,
     "model_loss_function": "categorical_crossentropy",
     "model_optimizer": "Adam",
@@ -9,14 +10,14 @@ search_space = {
 trainer = {
     "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
     "predictor_path": "misc/reinforcement_learning/accuracy_predictor_15.h5",
-    "model_validation_split": 0.1,
+    "model_validation_split": 0.2,
     "model_batch_size": 10,
-    "model_epochs": 5,
-    "verbose": 0,
+    "model_epochs": 8,
+    "verbose": 1,
     "hardware": "sipeed",  # sipeed, jevois
 }
 controller = {
-    "max_no_of_layers": 15,
+    "max_no_of_layers": 32,
     "agent_lr": 1e-4,
     "min_reward": 0.55,
     "dynamic_min_reward": False,

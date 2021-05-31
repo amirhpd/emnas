@@ -22,8 +22,7 @@ class Trainer(object):
         self.image_size = config.emnas["model_input_shape"][:2]
         self.train_batch = None
         self.validation_batch = None
-        # self.read_dataset()
-        # self.latency_predictor = LatencyPredictor()
+        self.read_dataset()
         self.hardware = config.trainer["hardware"]  # sipeed, jevois
         self.outlier_limit = config.latency_predictor["outlier_limit"]
         self.acc_model = keras.models.load_model(config.trainer["predictor_path"])
@@ -42,25 +41,18 @@ class Trainer(object):
                                                                    subset='validation',
                                                                    shuffle=False)
 
-    def train_models(self, samples, architectures):
-        epoch_performance = {}
-        for i, model in enumerate(architectures):
+    def train_models(self, architectures):
+        accuracies = []
+        for model in architectures:
             if model is None:
-                epoch_performance[tuple(samples[i])] = (0.4, 0)  # assign bad reward
+                accuracy = 0.4  # assign bad reward
             else:
-                t1 = time.time()
                 history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch),
                                     validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
                                     epochs=self.model_epochs, verbose=self.verbose)
-
-                t2 = round(time.time() - t1, 2)
-                acc = round(history.history['val_accuracy'][-1], 2)
-                latency = round(self.latency_predictor.inference(sequence=samples[i], hardware=self.hardware), 2)
-                print("Sequence:", samples[i], "Accuracy:", acc, "Latency:", latency, "ms")
-                # epoch_performance.append([samples[i], acc])
-                epoch_performance[tuple(samples[i])] = (acc, latency)
-
-        return epoch_performance
+                accuracy = history.history['val_accuracy'][-1]
+                accuracies.append(accuracy)
+        return accuracies
 
     def performance_estimate(self, sequence):
         if self.end_token in sequence:

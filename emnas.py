@@ -1,6 +1,7 @@
 import pandas as pd
 from controller import Controller
 from search_space import SearchSpace
+from search_space_mn import SearchSpaceMn
 from trainer import Trainer
 import config
 import numpy as np
@@ -25,6 +26,14 @@ max_no_of_layers = config.controller["max_no_of_layers"]
 dynamic_min_reward = config.controller["dynamic_min_reward"]
 variance_threshold = config.controller["variance_threshold"]
 valid_actions = config.controller["valid_actions"]
+
+if config.search_space["mode"] == "MobileNets":
+    search_space = SearchSpaceMn(model_output_shape=model_output_shape)
+else:
+    search_space = SearchSpace(model_output_shape=model_output_shape)
+tokens = search_space.generate_token()
+controller = Controller(tokens=tokens)
+trainer = Trainer(tokens)
 
 
 def _plot(history, path):
@@ -146,10 +155,6 @@ def save_logs(history, current_logs, best_result):
 
 def main_ff():
     t1 = time.time()
-    search_space = SearchSpace(model_output_shape=model_output_shape)
-    tokens = search_space.generate_token()
-    controller = Controller(tokens=tokens)
-    trainer = Trainer(tokens)
 
     history = {
         "accuracy_per_play": [],
@@ -248,10 +253,6 @@ def main_ff():
 
 def main_naive():
     t1 = time.time()
-    search_space = SearchSpace(model_output_shape=model_output_shape)
-    tokens = search_space.generate_token()
-    controller = Controller(tokens=tokens)
-    trainer = Trainer(tokens)
     cnt_valid = 1
     cnt_skip = 1
     result = False
@@ -276,7 +277,7 @@ def main_naive():
         while watchdog < naive_timeout:
             watchdog += 1
             sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
-            if (sequence in history["sequence_per_play"]) or (not controller.check_sequence(sequence)):
+            if (sequence in history["sequence_per_play"]) or (not search_space.check_sequence(sequence)):
                 cnt_skip += 1
                 continue
             architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
@@ -302,7 +303,7 @@ def main_naive():
         space = controller.generate_sequence_naive(mode="b")
         for sequence in space:
             sequence = sequence + (list(tokens.keys())[-1],)  # add last layer
-            if not controller.check_sequence(sequence):
+            if not search_space.check_sequence(sequence):
                 cnt_skip += 1
                 continue
             architecture = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)

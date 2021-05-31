@@ -1,12 +1,13 @@
 import keras
 import numpy as np
 from controller import Controller
-from emnas import plot_image, save_logs
+# from emnas import plot_image, save_logs
 from latency_predictor import LatencyPredictor
 from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
 from trainer import Trainer
 from camera_drive import SipeedCamera
+import tensorflow as tf
 
 
 def test_search_space():
@@ -137,11 +138,32 @@ def test_search_space_mobilenets():
     search_space = SearchSpaceMn(model_output_shape=2)
     # token = search_space.generate_token()
 
-    sample_sequence = [1, 25, 29, 34]
-    mobnet_sequence = [4, 26, 5, 29, 27, 1, 26, 9, 29, 27, 13, 26, 13, 29, 27, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
-                       17, 29, 27, 21, 26, 21, 34]
-    # translated_sequence = search_space.translate_sequence(sample_sequence)
+    # sample_sequence = [1, 25, 29, 34]
+    # mobnet_sequence = [4, 26, 5, 29, 27, 1, 26, 9, 29, 27, 13, 26, 13, 29, 27, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
+    #                    17, 29, 27, 21, 26, 21, 34]
+    mobnet_sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
+                       17, 43, 31, 21, 26, 21, 49]
+    valid_sequence = search_space.check_sequence(mobnet_sequence)
+    translated_sequence = search_space.translate_sequence(mobnet_sequence)
 
-    model = search_space.create_model(sequence=sample_sequence, model_input_shape=(128, 128, 3))
+    # model = search_space.create_model(sequence=mobnet_sequence, model_input_shape=(128, 128, 3))
+    model = search_space.create_models(samples=[mobnet_sequence], model_input_shape=(128, 128, 3))[0]
     # keras.utils.plot_model(model, to_file="model.png", show_shapes=True)
     print(model.summary())
+
+
+def test_create_convert_manual_sequence():
+    search_space = SearchSpaceMn(model_output_shape=2)
+    mobnet_sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
+                       17, 43, 31, 21, 26, 21, 49]
+    valid_sequence = search_space.check_sequence(mobnet_sequence)
+    assert valid_sequence is True
+    # model = search_space.create_models(samples=[mobnet_sequence], model_input_shape=(128, 128, 3))[0]
+    model = search_space.create_model(sequence=mobnet_sequence, model_input_shape=(128, 128, 3))
+    model.save("manual_model.h5")
+    converter = tf.compat.v1.lite.TFLiteConverter.from_keras_model_file("manual_model.h5")
+    tflite_model = converter.convert()
+    open("manual_model.tflite", "wb").write(tflite_model)
+# ./nncase/ncc compile latency_datasets/Dataset_/model_0001.tflite latency_datasets/Dataset_/model_0001.kmodel -i
+# tflite -o kmodel --dataset nncase/calibration_dataset
+
