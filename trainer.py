@@ -3,7 +3,6 @@ Performance Estimation Strategy
 trains the architectures created in search_space
 """
 import config
-from latency_predictor import LatencyPredictor
 import time
 import numpy as np
 import os
@@ -24,7 +23,6 @@ class Trainer(object):
         self.validation_batch = None
         self.read_dataset()
         self.hardware = config.trainer["hardware"]  # sipeed, jevois
-        self.outlier_limit = config.latency_predictor["outlier_limit"]
         self.acc_model = keras.models.load_model(config.trainer["predictor_path"])
         self.tokens = tokens
         self.len_search_space = len(tokens) + 1

@@ -28,12 +28,12 @@ controller = {
     "variance_threshold": 1e-2,
     "valid_actions": True  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
 }
-latency_predictor = {
-    "latency": False,  # enable/disable latency
-    "latency_dataset": "misc",
-    "outlier_limit": {"sipeed": 2000, "jevois": 100},
-    "lr": 0.001,
-    "train_epochs": 1000,
+predictor = {
+    "latency_dataset": "latency_datasets/Dataset_7",
+    "search_space_len": 49,
+    "no_of_epochs": 500,
+    "mode_invalids": "fill",  # fill, ignore
+    "mode_predictor": "accuracy"  # latency, accuracy
 }
 emnas = {
     "model_output_shape": 2,

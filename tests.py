@@ -2,7 +2,6 @@ import keras
 import numpy as np
 from controller import Controller
 # from emnas import plot_image, save_logs
-from latency_predictor import LatencyPredictor
 from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
 from trainer import Trainer
@@ -114,18 +113,6 @@ def test_sipeed_get_latency():
     sipeed_cam = SipeedCamera()
     latency = sipeed_cam.get_latency(model_file="model_0001.kmodel")
     print(latency)
-
-
-def test_latency_predictor():
-    latency_predictor = LatencyPredictor()
-
-    # history = latency_predictor.train()
-
-    # sequence = [25, 217, 306, 361, 377, 382]  # j:30, s:307
-    sequence = [105, 65, 291, 239, 189, 382]  # j:6, s:111
-    predicted_j = latency_predictor.inference(sequence=sequence, hardware="jevois")
-    predicted_s = latency_predictor.inference(sequence=sequence, hardware="sipeed")
-    print(predicted_j, predicted_s)
 
 
 def test_convert_kmodel():
