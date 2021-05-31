@@ -9,12 +9,11 @@ search_space = {
 }
 trainer = {
     "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
-    "predictor_path": "misc/reinforcement_learning/accuracy_predictor_15.h5",
     "model_validation_split": 0.2,
     "model_batch_size": 10,
     "model_epochs": 8,
     "verbose": 1,
-    "hardware": "sipeed",  # sipeed, jevois
+    "multi_obj_weight": 3
 }
 controller = {
     "max_no_of_layers": 32,
@@ -38,9 +37,9 @@ predictor = {
 emnas = {
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
-    "search_mode": "ff",  # ff, random, bruteforce
-    "naive_threshold": 0.65,
+    "search_mode": "rl",  # rl, random, bruteforce
+    "naive_threshold": 0.85,
     "naive_timeout": 1e6,
-    "no_of_episodes": 20,
+    "no_of_episodes": 10,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }

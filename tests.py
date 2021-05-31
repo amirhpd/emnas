@@ -5,7 +5,7 @@ from controller import Controller
 from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
 from trainer import Trainer
-from camera_drive import SipeedCamera
+from camera_drive import CameraDrive
 import tensorflow as tf
 
 
@@ -79,45 +79,15 @@ def test_controller_generate_sequence_naive():
     print("Done.")
 
 
-def test_plot_image_logs():
-    history_lstm_loss = [2.570976454421725e-05, -4.0828806140780216e-06, 2.319243887882294e-05, 1.2543778396789662e-05,
-                         -1.1891249442612662e-05, -1.734991667262875e-05, 1.366215491316325e-07, 1.676019123806327e-05,
-                         1.005385006465076e-06, -9.377887454320444e-07]
-    history_avg_acc = [0.724, 0.651, 0.686, 0.688, 0.641, 0.723, 0.667, 0.667, 0.761, 0.669]
-    history_result = {
-        (468, 38, 248, 544, 558, 572): 0.7662037014961243,
-        (467, 17, 20, 292, 483, 572): 0.5069444179534912,
-        (12, 99, 378, 420, 246, 572): 0.7916666865348816,
-        (151, 143, 482, 282, 131, 572): 0.7569444179534912,
-        (259, 304, 97, 491, 358, 572): 0.5069444179534912,
-        (355, 118, 479, 307, 373, 572): 0.4930555522441864
-    }
-    best_model = [
-        [('DepthwiseConv2D', 16, (1, 1), (1, 1), 'same', 'tanh'),
-         ('Conv2D', 40, (3, 3), (2, 2), 'valid', 'tanh'),
-         ('Conv2D', 32, (1, 1), (2, 2), 'valid', 'relu'),
-         ('Conv2D', 40, (1, 1), (1, 1), 'same', 'tanh'),
-         ('DepthwiseConv2D', 24, (2, 2), (1, 1), 'same', 'tanh'), (2, 'softmax')],
-        0.8402777910232544]
-
-    #  rnn
-    # img = plot_image(history_lstm_loss, history_avg_acc, history_result)
-    # save_logs(history_lstm_loss, history_avg_acc, history_result, best_model, img)
-
-    #  naive
-    img = plot_image(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result)
-    save_logs(all_lstm_loss=[0], all_avg_acc=[0], all_result=history_result, final_result=best_model, image=img)
-
-
 def test_sipeed_get_latency():
-    sipeed_cam = SipeedCamera()
+    sipeed_cam = CameraDrive()
     latency = sipeed_cam.get_latency(model_file="model_0001.kmodel")
     print(latency)
 
 
 def test_convert_kmodel():
     latency_dataset = "/home/amirhossein/Codes/NAS/mobileNet/converted"
-    sipeed_cam = SipeedCamera()
+    sipeed_cam = CameraDrive()
     sipeed_cam.convert_kmodel(latency_dataset)
 
 
@@ -151,6 +121,23 @@ def test_create_convert_manual_sequence():
     converter = tf.compat.v1.lite.TFLiteConverter.from_keras_model_file("manual_model.h5")
     tflite_model = converter.convert()
     open("manual_model.tflite", "wb").write(tflite_model)
+
+
 # ./nncase/ncc compile latency_datasets/Dataset_/model_0001.tflite latency_datasets/Dataset_/model_0001.kmodel -i
 # tflite -o kmodel --dataset nncase/calibration_dataset
 
+
+def test_multi_objective():
+    search_space = SearchSpaceMn(model_output_shape=2)
+    tokens = search_space.generate_token()
+    trainer = Trainer(tokens)
+    max_no_of_layers = 32
+    sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
+                17, 43, 31, 21, 26, 21]  # sequence is without end token
+    # sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26]
+    if len(sequence) < max_no_of_layers - 1:
+        for _ in range((max_no_of_layers - 1) - len(sequence)):
+            sequence.append(0)
+    acc, lat = trainer.performance_estimate(sequence)
+    reward = trainer.multi_objective_reward(acc, lat)
+    print("accuracy:", acc, "latency:", lat, "reward:", reward)

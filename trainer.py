@@ -19,11 +19,12 @@ class Trainer(object):
         self.model_epochs = config.trainer["model_epochs"]
         self.verbose = config.trainer["verbose"]
         self.image_size = config.emnas["model_input_shape"][:2]
+        self.multi_obj_weight = config.trainer["multi_obj_weight"]
         self.train_batch = None
         self.validation_batch = None
         self.read_dataset()
-        self.hardware = config.trainer["hardware"]  # sipeed, jevois
-        self.acc_model = keras.models.load_model(config.trainer["predictor_path"])
+        self.acc_model = keras.models.load_model("predictors/accuracy_predictor.h5")
+        self.lat_model = keras.models.load_model("predictors/latency_predictor.h5")
         self.tokens = tokens
         self.len_search_space = len(tokens) + 1
         self.end_token = list(tokens.keys())[-1]
@@ -60,4 +61,12 @@ class Trainer(object):
 
         seq_hot = keras.utils.to_categorical(sequence, num_classes=self.len_search_space)[np.newaxis]
         acc = self.acc_model.predict(seq_hot)[0][0]
-        return round(acc, 3)
+        lat = self.lat_model.predict(seq_hot)[0][0]
+        return round(acc, 3), round(lat, 3)
+
+    def multi_objective_reward(self, accuracy, latency):
+        acc = np.clip(accuracy, 0.4, 1)
+        latency = np.clip(latency, 0, 1000)
+        lat = (-6e-4 * latency) + 1
+        reward = np.average([acc, lat], weights=[self.multi_obj_weight, 1])
+        return round(reward, 4)
