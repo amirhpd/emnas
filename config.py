@@ -10,9 +10,9 @@ search_space = {
 trainer = {
     "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
     "predictor_path": "misc/reinforcement_learning/accuracy_predictor_15.h5",
-    "model_validation_split": 0.1,
+    "model_validation_split": 0.2,
     "model_batch_size": 10,
-    "model_epochs": 1,
+    "model_epochs": 8,
     "verbose": 1,
     "hardware": "sipeed",  # sipeed, jevois
 }

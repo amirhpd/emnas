@@ -13,9 +13,9 @@ from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
 
 
-no_of_examples = 5
+no_of_examples = 1000
 kmodel_limit = 2000
-latency_dataset = "latency_datasets/Dataset_6"
+latency_dataset = "latency_datasets/Dataset_7"
 model_input_shape = config.emnas["model_input_shape"]
 
 
@@ -80,20 +80,16 @@ def measure_sipeed_latency():
                 latency = sipeed_cam.get_latency(model_file=kmodel)
             except Exception as e:
                 print(kmodel_name, "Latency measurement failed.")
-                print(e)
-                continue
+                df.at[kmodel_index, "sipeed_latency [ms]"] = 0
+                df.to_csv(f"{latency_dataset}/table.csv", index=False)
+                raise ValueError(e)
         else:
             print(kmodel_name, "Too large.")
-            latency = pd.np.nan
+            latency = 0
 
         df.at[kmodel_index, "sipeed_latency [ms]"] = round(latency, 2)
-        print(kmodel_name, "Latency measurement on Sipeed done.", time.time()-t1, "sec")
-
-        if (i+1) % 10 == 0:
-            print("Saving ..")
-            df.to_csv(f"{latency_dataset}/table.csv", index=False)  # save to hdd every 10 iter.
-
-    df.to_csv(f"{latency_dataset}/table.csv", index=False)
+        df.to_csv(f"{latency_dataset}/table.csv", index=False)
+        print(kmodel_name, "Latency measurement on Sipeed done.", round(time.time()-t1, 1), "sec")
 
 
 def _get_test_images(no_of_images):

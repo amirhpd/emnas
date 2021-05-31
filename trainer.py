@@ -50,7 +50,7 @@ class Trainer(object):
                 history = model.fit(self.train_batch, steps_per_epoch=len(self.train_batch),
                                     validation_data=self.validation_batch, validation_steps=len(self.validation_batch),
                                     epochs=self.model_epochs, verbose=self.verbose)
-                accuracy = round(history.history['val_accuracy'][-1], 3)
+                accuracy = history.history['val_accuracy'][-1]
                 accuracies.append(accuracy)
         return accuracies
 

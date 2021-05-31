@@ -9,7 +9,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
 
 
-latency_dataset = "latency_datasets/Dataset_6"
+latency_dataset = "latency_datasets/Dataset_7"
 table_name = "table"
 model_output_shape = config.emnas["model_output_shape"]
 if config.search_space["mode"] == "MobileNets":
@@ -33,7 +33,7 @@ def measure_accuracy():
         if not pd.isna(current_cell):
             print(h5_name, "already measured:", current_cell)
             continue
-        if pd.isna(df.loc[h5_index[0], "sipeed_latency [ms]"]):
+        if pd.isna(df.loc[h5_index[0], "sipeed_latency [ms]"]) or df.loc[h5_index[0], "sipeed_latency [ms]"] == 0:
             print(h5_name, "skipped")
             continue
 
@@ -45,19 +45,16 @@ def measure_accuracy():
             print(e)
             continue
 
-        df.at[h5_index, "accuracy"] = round(accuracy, 2)
+        df.at[h5_index, "accuracy"] = round(accuracy, 4)
+        df.to_csv(f"{latency_dataset}/{table_name}.csv", index=False)
         print(h5_name, "Accuracy measurement done.", round(time.time()-t1, 2), "sec")
-
-        if (i+1) % 10 == 0:
-            print("Saving ..")
-            df.to_csv(f"{latency_dataset}/{table_name}.csv", index=False)  # save to hdd every 10 iter.
-
-    df.to_csv(f"{latency_dataset}/{table_name}.csv", index=False)
+        time.sleep(10)  # cpu rest
 
 
 if __name__ == '__main__':
+    t0 = time.time()
     measure_accuracy()
-    print("DONE")
+    print("DONE in", round(time.time()-t0, 2), "sec")
 
 
 
