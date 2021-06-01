@@ -7,7 +7,7 @@ import json
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import keras
-from camera_drive import SipeedCamera
+from camera_drive import CameraDrive
 from controller import Controller
 from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
@@ -129,7 +129,7 @@ def measure_cpu_latency():
 
 if __name__ == '__main__':
     step = 2
-    sipeed_cam = SipeedCamera()
+    sipeed_cam = CameraDrive()
 
     if step == 1:
         # Step 1.1

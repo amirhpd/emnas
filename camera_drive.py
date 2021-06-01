@@ -7,7 +7,7 @@ import re
 import pandas as pd
 
 
-class SipeedCamera(object):
+class CameraDrive(object):
     def __init__(self):
         self.connection = None
         self.response = []

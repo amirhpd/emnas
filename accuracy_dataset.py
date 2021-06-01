@@ -39,7 +39,7 @@ def measure_accuracy():
 
         architectures = [keras.models.load_model(f"{latency_dataset}/{h5}")]
         try:
-            accuracy = trainer.train_models(architectures=architectures)[0]
+            accuracy = trainer.train_models(architectures=architectures, train_mode="fast")[0]
         except Exception as e:
             print(h5_name, "Accuracy measurement failed.")
             print(e)

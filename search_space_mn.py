@@ -122,7 +122,7 @@ class SearchSpaceMn(object):
                 architecture = self.create_model(sequence=sequence, model_input_shape=model_input_shape)
                 architectures.append(architecture)
             except ValueError as e:
-                print("Skipped:", sequence, "due to:", e)
+                # print("Skipped:", sequence, "due to:", e)
                 architectures.append(None)
 
         return architectures
