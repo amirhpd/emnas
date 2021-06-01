@@ -8,10 +8,12 @@ search_space = {
     "model_metrics": ["accuracy"],
 }
 trainer = {
-    "dataset_path": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
+    "dataset_path_fast": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
+    "dataset_path_full": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678",
+    "model_epochs_fast": 8,
+    "model_epochs_full": 1,
     "model_validation_split": 0.2,
     "model_batch_size": 10,
-    "model_epochs": 8,
     "verbose": 1,
     "multi_obj_weight": 3
 }
@@ -40,6 +42,6 @@ emnas = {
     "search_mode": "rl",  # rl, random, bruteforce
     "naive_threshold": 0.85,
     "naive_timeout": 1e6,
-    "no_of_episodes": 10,
+    "no_of_episodes": 1,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }

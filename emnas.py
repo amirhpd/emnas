@@ -143,11 +143,11 @@ def _plot(history, path):
 
     img_list = [cv2.imread(path + f"/fig_{i}.png") for i in range(1, 12)]
     img = cv2.vconcat(img_list)
-    cv2.imwrite(path + "/fig.png", img)
+    cv2.imwrite(path + "/plots.png", img)
     [os.remove(path + f"/fig_{i}.png") for i in range(1, 12)]
 
 
-def save_logs(history, current_logs, best_result):
+def save_logs(history, current_logs, finish_log, final_result):
     time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     path = f"{log_path}/{time_str}_{search_mode}"
     os.mkdir(path)
@@ -161,8 +161,10 @@ def save_logs(history, current_logs, best_result):
     history.pop("sequence_per_play", None)
     df_play = pd.DataFrame(history_play)
     df_episode = pd.DataFrame(history)
+    df_final_result = pd.DataFrame(final_result)
     df_play.to_csv(path + "/play_data.csv", index=False)
     df_episode.to_csv(path + "/episode_data.csv", index=False)
+    df_final_result.to_csv(path + "/final_result.csv", index=False)
 
     shutil.copyfile("search_space.json", path + "/search_space.json")
     shutil.copyfile("config.py", path + "/config.txt")
@@ -170,8 +172,8 @@ def save_logs(history, current_logs, best_result):
     df_current_logs = pd.DataFrame(current_logs)
     df_current_logs.to_csv(path + "/current_logs.csv", index=False)
 
-    with open(path + "/best_result.txt", "w") as output:
-        output.write(best_result)
+    with open(path + "/finish_log.txt", "w") as output:
+        output.write(finish_log)
 
 
 def main_rl():
@@ -274,20 +276,38 @@ def main_rl():
         print()
         current_logs.append(current_log)
 
-    best_sequence = history["sequence_per_play"][
-        history["reward_per_play"].index(max(history["reward_per_play"]))]
-    best_acc, best_lat = trainer.performance_estimate(best_sequence[0])
-    best_reward = trainer.multi_objective_reward(best_acc, best_lat)
-    best_result = f"Best sequence: {best_sequence}" \
-                  f" \t with accuracy: {round(best_acc, 3)}" \
-                  f" \t , latency: {round(best_lat, 3)}" \
-                  f" \t and reward: {round(best_reward, 3)}" \
-                  f" \t Explored: {len(history['sequence_per_play'])} \t In {int(time.time() - t1)} sec. \n" \
-                  f"Total average reward: {np.average(history['reward_per_play'])}"
-    print(best_result)
-
-    save_logs(history, current_logs, best_result)
+    finish_log = f"NAS finished in {int(time.time() - t1)} sec. \n" \
+                 f"Explored sequences: {len(history['sequence_per_play'])} \n" \
+                 f"Total average reward: {np.average(history['reward_per_play'])}"
+    print(finish_log)
+    final_result = final_train(history)
+    save_logs(history, current_logs, finish_log, final_result)
     print("DONE")
+
+
+def final_train(history):
+    print("Full train on best results..")
+    full_trains = {
+        "sequence": [],
+        "nas_accuracy": [],
+        "nas_latency": [],
+        "nas_reward": [],
+        "trained_accuracy": [],
+    }
+    high_rewards = sorted(zip(history["reward_per_play"], range(0, len(history["reward_per_play"]))), reverse=True)[:3]
+    for idx in high_rewards:
+        sequence = history["sequence_per_play"][idx[1]]
+        sequence = [i for i in sequence[0].tolist() if i != 0]
+        if trainer.end_token not in sequence:
+            sequence = np.append(sequence, trainer.end_token)
+        architectures = search_space.create_models(samples=[sequence], model_input_shape=model_input_shape)
+        trained_acc = trainer.train_models(architectures, train_mode="full")[0]
+        full_trains["sequence"].append(sequence)
+        full_trains["nas_accuracy"].append(history["accuracy_per_play"][idx[1]])
+        full_trains["nas_latency"].append(history["latency_per_play"][idx[1]])
+        full_trains["nas_reward"].append(history["reward_per_play"][idx[1]])
+        full_trains["trained_accuracy"].append(trained_acc)
+    return full_trains
 
 
 def main_naive():
