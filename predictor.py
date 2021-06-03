@@ -16,7 +16,7 @@ plt.rcParams.update({'font.size': 20, 'mathtext.fontset': 'stix', 'font.family':
 class Predictor(object):
 
     def __init__(self):
-        self.latency_dataset = config.predictor["latency_dataset"]
+        self.prediction_dataset = config.predictor["prediction_dataset"]
         self.search_space_len = config.predictor["search_space_len"]
         self.epochs = config.predictor["no_of_epochs"]
         self.mode_invalids = config.predictor["mode_invalids"]  # fill, ignore
@@ -27,7 +27,7 @@ class Predictor(object):
         self.bad_reward = 1000 if self.mode_predictor == "latency" else 0.4
 
     def pre_process_dataset(self):
-        df_in = pd.read_csv(f"{self.latency_dataset}/table.csv")
+        df_in = pd.read_csv(f"{self.prediction_dataset}/table.csv")
         df_in[self.label_column] = df_in[self.label_column].fillna(0)
 
         if self.mode_invalids == "fill":

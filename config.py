@@ -30,7 +30,7 @@ controller = {
     "valid_actions": True  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
 }
 predictor = {
-    "latency_dataset": "latency_datasets/Dataset_7",
+    "prediction_dataset": "latency_datasets/Dataset_7",
     "search_space_len": 49,
     "no_of_epochs": 400,
     "mode_invalids": "fill",  # fill, ignore
