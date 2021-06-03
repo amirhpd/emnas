@@ -10,6 +10,7 @@ import matplotlib
 import cv2
 
 matplotlib.use('TkAgg')
+plt.rcParams.update({'font.size': 20, 'mathtext.fontset': 'stix', 'font.family': 'STIXGeneral'})
 
 
 class Predictor(object):
@@ -23,13 +24,14 @@ class Predictor(object):
         self.model = None
         self.longest_len = 0
         self.label_column = "sipeed_latency [ms]" if self.mode_predictor == "latency" else "accuracy"
+        self.bad_reward = 1000 if self.mode_predictor == "latency" else 0.4
 
     def pre_process_dataset(self):
         df_in = pd.read_csv(f"{self.latency_dataset}/table.csv")
         df_in[self.label_column] = df_in[self.label_column].fillna(0)
 
         if self.mode_invalids == "fill":
-            df_in[self.label_column] = df_in[self.label_column].apply(lambda i: 0.4 if i == 0 else i)
+            df_in[self.label_column] = df_in[self.label_column].apply(lambda i: self.bad_reward if i == 0 else i)
         if self.mode_invalids == "ignore":
             df_in = df_in[df_in[self.label_column] != 0]
 

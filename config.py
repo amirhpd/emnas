@@ -32,9 +32,9 @@ controller = {
 predictor = {
     "latency_dataset": "latency_datasets/Dataset_7",
     "search_space_len": 49,
-    "no_of_epochs": 500,
+    "no_of_epochs": 400,
     "mode_invalids": "fill",  # fill, ignore
-    "mode_predictor": "accuracy"  # latency, accuracy
+    "mode_predictor": "latency"  # latency, accuracy
 }
 emnas = {
     "model_output_shape": 2,
