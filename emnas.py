@@ -13,6 +13,7 @@ import matplotlib
 import cv2
 
 matplotlib.use('TkAgg')
+plt.rcParams.update({'font.size': 16, 'mathtext.fontset': 'stix', 'font.family': 'STIXGeneral'})
 
 model_output_shape = config.emnas["model_output_shape"]
 model_input_shape = config.emnas["model_input_shape"]
@@ -36,7 +37,9 @@ trainer = Trainer(tokens)
 
 
 def _plot(history, path):
-    fig = plt.figure(figsize=(24, 4))
+    img_size = (24, 5)
+
+    fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["loss"])), history["loss"])
     plt.title("Agent loss")
     plt.xlabel("Episode")
@@ -44,7 +47,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_1.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["reward_per_episode"])), history["reward_per_episode"],
              label="Last reward of episode")
     plt.plot(np.arange(0, len(history["avg_reward_per_episode"])), history["avg_reward_per_episode"],
@@ -57,7 +60,7 @@ def _plot(history, path):
     plt.legend()
     plt.savefig(path + "/fig_2.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     bins = int(len(history["reward_per_episode"]) / 5)
     bins = bins if bins > 1 else 1
     plt.hist(history["reward_per_episode"], bins=bins, edgecolor="k")
@@ -67,7 +70,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_3.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     min_acc = [i[0] for i in history["min_max"]]
     plt.plot(np.arange(0, len(min_acc)), min_acc)
     plt.axhline(y=np.average(min_acc), c="g")
@@ -77,7 +80,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_4.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     max_acc = [i[1] for i in history["min_max"]]
     plt.plot(np.arange(0, len(max_acc)), max_acc)
     plt.axhline(y=np.average(max_acc), c="g")
@@ -87,7 +90,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_5.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     best_acc = [i[0] for i in history["best_so_far"]]
     plt.plot(np.arange(0, len(best_acc)), best_acc)
     plt.title("Best accuracy so far")
@@ -96,7 +99,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_6.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     best_lat = [i[1] for i in history["best_so_far"]]
     plt.plot(np.arange(0, len(best_lat)), best_lat)
     plt.title("Best latency so far")
@@ -105,7 +108,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_7.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     best_rew = [i[2] for i in history["best_so_far"]]
     plt.plot(np.arange(0, len(best_rew)), best_rew)
     plt.title("Best reward so far")
@@ -114,7 +117,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_8.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["reward_per_play"])), history["reward_per_play"])
     plt.axhline(y=np.average(history["reward_per_play"]), c="g")
     plt.title("All rewards per play")
@@ -123,7 +126,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_9.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     bins = int(len(history["reward_per_play"]) / 5)
     bins = bins if bins > 1 else 1
     plt.hist(history["reward_per_play"], bins=bins, edgecolor="k")
@@ -133,7 +136,7 @@ def _plot(history, path):
     plt.grid()
     plt.savefig(path + "/fig_10.png")
 
-    fig = plt.figure(figsize=(24, 4))
+    fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["play_counts"])), history["play_counts"])
     plt.title("No. of plays in one episode")
     plt.xlabel("Episode")

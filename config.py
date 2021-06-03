@@ -42,6 +42,6 @@ emnas = {
     "search_mode": "rl",  # rl, random, bruteforce
     "naive_threshold": 0.85,
     "naive_timeout": 1e6,
-    "no_of_episodes": 1,
+    "no_of_episodes": 100,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }
