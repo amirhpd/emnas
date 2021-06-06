@@ -26,6 +26,7 @@ max_no_of_layers = config.controller["max_no_of_layers"]
 dynamic_min_reward = config.controller["dynamic_min_reward"]
 variance_threshold = config.controller["variance_threshold"]
 valid_actions = config.controller["valid_actions"]
+valid_sequence_timeout = config.controller["valid_sequence_timeout"]
 
 if config.search_space["mode"] == "MobileNets":
     search_space = SearchSpaceMn(model_output_shape=model_output_shape)
@@ -204,12 +205,17 @@ def main_rl():
                                  dtype="int32")[np.newaxis]
     for episode in range(no_of_episodes):
         done = False
+        break_flag = False
         play_counter = 0
         invalid_counter = 0
         episode_rew = []
         while not done:
             if valid_actions:
                 actions, prob, valid = controller.get_valid_action(sequence)
+                if valid is None:
+                    print("Valid sequence generation timeout.")
+                    break_flag = True
+                    break
                 accuracy, latency = trainer.performance_estimate(actions)
                 reward = trainer.multi_objective_reward(accuracy, latency)
                 play_counter += 1
@@ -222,7 +228,13 @@ def main_rl():
                     play_counter += 1
                 else:
                     invalid_counter += 1
+                    accuracy = 0.4
+                    latency = 1000
                     reward = 0.4
+                    if invalid_counter > valid_sequence_timeout:
+                        print("Valid sequence generation timeout.")
+                        break_flag = True
+                        break
 
             done = False
             if reward < min_reward and play_counter >= controller.min_plays:
@@ -278,6 +290,8 @@ def main_rl():
             print(v, "\t", end=" ")
         print()
         current_logs.append(current_log)
+        if break_flag:
+            break
 
     finish_log = f"NAS finished in {int(time.time() - t1)} sec. \n" \
                  f"Explored sequences: {len(history['sequence_per_play'])} \n" \

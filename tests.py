@@ -135,9 +135,20 @@ def test_multi_objective():
     sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
                 17, 43, 31, 21, 26, 21]  # sequence is without end token
     # sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26]
+    sequence = [6, 31, 15, 48, 25, 7, 21, 28, 13, 12, 25, 35, 35, 43, 24, 29]
     if len(sequence) < max_no_of_layers - 1:
         for _ in range((max_no_of_layers - 1) - len(sequence)):
             sequence.append(0)
     acc, lat = trainer.performance_estimate(sequence)
     reward = trainer.multi_objective_reward(acc, lat)
     print("accuracy:", acc, "latency:", lat, "reward:", reward)
+
+
+def test_full_train():
+    search_space = SearchSpaceMn(model_output_shape=2)
+    tokens = search_space.generate_token()
+    trainer = Trainer(tokens)
+    sequence = [38, 14, 4, 36, 40, 12, 41, 47, 34, 2, 38, 49]
+    architectures = search_space.create_models(samples=[sequence], model_input_shape=(128, 128, 3))
+    trained_acc = trainer.train_models(architectures, train_mode="full")[0]
+    print(trained_acc)

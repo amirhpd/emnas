@@ -15,7 +15,7 @@ trainer = {
     "model_validation_split": 0.2,
     "model_batch_size": 10,
     "verbose": 1,
-    "multi_obj_weight": 3
+    "multi_obj_weight": 15
 }
 controller = {
     "max_no_of_layers": 32,
@@ -27,7 +27,8 @@ controller = {
     "alpha": 1e-3,  # learning rate in the policy gradient
     "gamma": 0.99,  # decay rate of past observations
     "variance_threshold": 1e-2,
-    "valid_actions": True  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
+    "valid_actions": False,  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
+    "valid_sequence_timeout": 1000
 }
 predictor = {
     "prediction_dataset": "latency_datasets/Dataset_7",
@@ -42,6 +43,6 @@ emnas = {
     "search_mode": "rl",  # rl, random, bruteforce
     "naive_threshold": 0.85,
     "naive_timeout": 1e6,
-    "no_of_episodes": 100,
+    "no_of_episodes": 300,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }

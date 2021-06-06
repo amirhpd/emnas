@@ -24,6 +24,7 @@ class Controller(object):
         self.alpha = config.controller["alpha"]
         self.gamma = config.controller["gamma"]
         self.model_input_shape = config.emnas["model_input_shape"]
+        self.valid_sequence_timeout = config.controller["valid_sequence_timeout"]
         self.tokens = tokens
         self.len_search_space = len(tokens) + 1
         self.end_token = list(tokens.keys())[-1]
@@ -103,6 +104,8 @@ class Controller(object):
             if valid_sequence:
                 valid_model = self.search_space.create_models(samples=[sequence], model_input_shape=self.model_input_shape)
                 true_sequence = True if (valid_model[0] is not None and valid_sequence is True) else False
+            if counter > self.valid_sequence_timeout:
+                return None, None, None  # timeout
 
         if len(actions) < self.max_no_of_layers - 1:
             for _ in range((self.max_no_of_layers - 1) - len(actions)):
