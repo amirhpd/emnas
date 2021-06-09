@@ -111,8 +111,7 @@ def test_search_space_mobilenets():
 
 def test_create_convert_manual_sequence():
     search_space = SearchSpaceMn(model_output_shape=2)
-    mobnet_sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
-                       17, 43, 31, 21, 26, 21, 49]
+    mobnet_sequence = [6, 31, 15, 48, 25, 7, 21, 28, 13, 12, 25, 35, 35, 43, 24, 29, 49]
     valid_sequence = search_space.check_sequence(mobnet_sequence)
     assert valid_sequence is True
     # model = search_space.create_models(samples=[mobnet_sequence], model_input_shape=(128, 128, 3))[0]
@@ -135,7 +134,7 @@ def test_multi_objective():
     sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26,
                 17, 43, 31, 21, 26, 21]  # sequence is without end token
     # sequence = [4, 26, 5, 43, 31, 9, 26, 9, 43, 31, 13, 26, 13, 43, 31, 17, 26, 17, 26, 17, 26, 17, 26, 17, 26]
-    sequence = [6, 31, 15, 48, 25, 7, 21, 28, 13, 12, 25, 35, 35, 43, 24, 29]
+    # sequence = [6, 31, 15, 48, 25, 7, 21, 28, 13, 12, 25, 35, 35, 43, 24, 29]
     if len(sequence) < max_no_of_layers - 1:
         for _ in range((max_no_of_layers - 1) - len(sequence)):
             sequence.append(0)

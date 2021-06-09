@@ -11,11 +11,11 @@ trainer = {
     "dataset_path_fast": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
     "dataset_path_full": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678",
     "model_epochs_fast": 8,
-    "model_epochs_full": 1,
+    "model_epochs_full": 10,
     "model_validation_split": 0.2,
     "model_batch_size": 10,
     "verbose": 1,
-    "multi_obj_weight": 15
+    "multi_obj_weight": 0.5
 }
 controller = {
     "max_no_of_layers": 32,
@@ -27,12 +27,12 @@ controller = {
     "alpha": 1e-3,  # learning rate in the policy gradient
     "gamma": 0.99,  # decay rate of past observations
     "variance_threshold": 1e-2,
-    "valid_actions": False,  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
-    "valid_sequence_timeout": 1000
+    "valid_actions": True,  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
+    "valid_sequence_timeout": 10000
 }
 predictor = {
-    "prediction_dataset": "latency_datasets/Dataset_7",
-    "search_space_len": 49,
+    "prediction_dataset": "latency_datasets/Dataset_3",
+    "search_space_len": 382,
     "no_of_epochs": 400,
     "mode_invalids": "fill",  # fill, ignore
     "mode_predictor": "latency"  # latency, accuracy
@@ -41,8 +41,8 @@ emnas = {
     "model_output_shape": 2,
     "model_input_shape": (128, 128, 3),
     "search_mode": "rl",  # rl, random, bruteforce
-    "naive_threshold": 0.85,
-    "naive_timeout": 1e6,
-    "no_of_episodes": 300,
+    "naive_threshold": 0.95,
+    "naive_timeout": 1e3,
+    "no_of_episodes": 500,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }

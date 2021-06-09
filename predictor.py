@@ -30,6 +30,9 @@ class Predictor(object):
         df_in = pd.read_csv(f"{self.prediction_dataset}/table.csv")
         df_in[self.label_column] = df_in[self.label_column].fillna(0)
 
+        if self.mode_predictor == "latency":
+            df_in[self.label_column] = df_in[self.label_column].apply(lambda x: 1000 if x > 1000 else x)  # outliers
+
         if self.mode_invalids == "fill":
             df_in[self.label_column] = df_in[self.label_column].apply(lambda i: self.bad_reward if i == 0 else i)
         if self.mode_invalids == "ignore":
@@ -117,8 +120,13 @@ class Predictor(object):
 
         width = 0.2
         fig = plt.figure(figsize=(24, 10))
-        plt.bar(np.arange(len(y_test)) - width / 2, y_test[self.label_column].to_list(), width, label="True Values")
-        plt.bar(np.arange(len(y_test)) + width / 2, y_predicted.flatten(), width, label="Predicted Values")
+        y_true_ = y_test[self.label_column].to_list()
+        y_pred_ = y_predicted.flatten()
+        y_sorted = sorted(zip(y_true_, y_pred_), key=lambda x: x[0])
+        y_true = [i[0] for i in y_sorted]
+        y_pred = [i[1] for i in y_sorted]
+        plt.bar(np.arange(len(y_test)) - width / 2, y_true, width, label="True Values")
+        plt.bar(np.arange(len(y_test)) + width / 2, y_pred, width, label="Predicted Values")
         plt.title("Validation Set Comparison")
         plt.xlabel("Examples")
         plt.ylabel(self.mode_predictor)
