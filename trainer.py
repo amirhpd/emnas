@@ -64,8 +64,11 @@ class Trainer(object):
             sequence = np.append(sequence, self.end_token)  # adding end token
 
         seq_hot = keras.utils.to_categorical(sequence, num_classes=self.len_search_space)[np.newaxis]
-        acc = self.acc_model.predict(seq_hot)[0][0]
-        lat = self.lat_model.predict(seq_hot)[0][0]
+        try:
+            acc = self.acc_model.predict(seq_hot)[0][0]
+            lat = self.lat_model.predict(seq_hot)[0][0]
+        except ValueError as e:
+            raise ValueError("Predictor models does not match the generated sequence.", e)
         return round(acc, 3), round(lat, 3)
 
     def multi_objective_reward(self, accuracy, latency):

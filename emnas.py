@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import Dict
 from controller import Controller
 from search_space import SearchSpace
 from search_space_mn import SearchSpaceMn
@@ -163,6 +164,8 @@ def save_logs(history, current_logs, finish_log, final_result):
     history.pop("latency_per_play", None)
     history.pop("reward_per_play", None)
     history.pop("sequence_per_play", None)
+    if search_mode != "rl":
+        history.pop("best_so_far", None)
     df_play = pd.DataFrame(history_play)
     df_episode = pd.DataFrame(history)
     df_final_result = pd.DataFrame(final_result)
@@ -302,7 +305,7 @@ def main_rl():
     print("DONE")
 
 
-def final_train(history):
+def final_train(history: Dict) -> Dict:
     print("Full train on best results..")
     full_trains = {
         "sequence": [],
@@ -354,7 +357,6 @@ def main_naive():
     if search_mode == "random":
         watchdog = 0
         while watchdog < naive_timeout:
-            watchdog += 1
             sequence = controller.generate_sequence_naive(mode="r") + [list(tokens.keys())[-1]]  # add last layer
             if (sequence in history["sequence_per_play"]) or (not search_space.check_sequence(sequence)):
                 cnt_skip += 1
@@ -372,10 +374,12 @@ def main_naive():
             accuracy, latency = trainer.performance_estimate(sequence=sequence)
             reward = trainer.multi_objective_reward(accuracy, latency)
             cnt_valid += 1
+            watchdog += 1
             history["accuracy_per_play"].append(accuracy)
             history["latency_per_play"].append(latency)
             history["reward_per_play"].append(reward)
             history["sequence_per_play"].append(sequence)
+            history["best_so_far"].append((0, 0, max(history["reward_per_play"])))
             print(f"Reward: {str(reward)} \t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t Sequence: {sequence}")
             if reward >= naive_threshold:
                 result = True
@@ -400,9 +404,14 @@ def main_naive():
             history["latency_per_play"].append(latency)
             history["reward_per_play"].append(reward)
             history["sequence_per_play"].append(sequence)
+            history["best_so_far"].append((0, 0, max(history["reward_per_play"])))
             print(f"Reward: {str(reward)} \t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t Sequence: {sequence}")
             if reward >= naive_threshold:
                 result = True
+                break
+            if cnt_valid >= naive_timeout:
+                print("Timeout")
+                result = False
                 break
 
     if result:
@@ -416,7 +425,7 @@ def main_naive():
                       f"\t Explored: {cnt_valid} \t Skipped: {cnt_skip} \t In {int(time.time() - t1)} sec. \n"
 
     print(best_result)
-    save_logs(history, current_logs, best_result)
+    save_logs(history, current_logs, best_result, {})
     print("DONE")
 
 
