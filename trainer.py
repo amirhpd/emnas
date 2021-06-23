@@ -21,7 +21,8 @@ class Trainer(object):
         self.model_epochs_full = config.trainer["model_epochs_full"]
         self.verbose = config.trainer["verbose"]
         self.image_size = config.emnas["model_input_shape"][:2]
-        self.multi_obj_weight = config.trainer["multi_obj_weight"]
+        self.multi_obj_parameter = config.trainer["multi_obj_parameter"]
+        self.objective_type = config.trainer["objective_type"]
         self.train_batch = None
         self.validation_batch = None
         self.acc_model = keras.models.load_model("predictors/accuracy_predictor.h5")
@@ -74,6 +75,13 @@ class Trainer(object):
     def multi_objective_reward(self, accuracy, latency):
         acc = np.clip(accuracy, 0.4, 1)
         latency = np.clip(latency, 0, 1000)
-        lat = (-6e-4 * latency) + 1
-        reward = np.average([acc, lat], weights=[self.multi_obj_weight, 1])
+        if self.objective_type == "linear":
+            lat = (-6e-4 * latency) + 1
+            reward = np.average([acc, lat], weights=[self.multi_obj_parameter, 1])
+        else:
+            target_lat = self.multi_obj_parameter
+            alpha = 0
+            beta = -1
+            w = alpha if latency <= target_lat else beta
+            reward = acc * (latency/target_lat)**w
         return round(reward, 4)
