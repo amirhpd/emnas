@@ -132,6 +132,9 @@ class SearchSpaceMn(object):
         zero_pad_tokens = [x for x, y in tokens.items() if "ZeroPadding2D" in y]
         end_tokens = [x for x, y in tokens.items() if "end" in y]
 
+        if len(sequence) < 8:
+            return False
+
         for i, token in enumerate(sequence):
             if i == 0 and (token in zero_pad_tokens or token in end_tokens):
                 return False

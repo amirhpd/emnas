@@ -122,6 +122,26 @@ def test_create_convert_manual_sequence():
     open("manual_model.tflite", "wb").write(tflite_model)
 
 
+def test_create_convert_sequences():
+    path = "/home/amirhossein/Codes/NAS/emnas/latency_datasets/Dataset_"
+    search_space = SearchSpaceMn(model_output_shape=2)
+    sequences = {
+        "01": [12, 4, 30, 14, 32, 39, 42, 26, 36, 13, 49],
+        "02": [8, 10, 35, 27, 47, 10, 39, 46, 5, 46, 31, 39, 39, 16, 11, 26, 45, 49],
+        "03": [10, 10, 10, 9, 2, 44, 25, 19, 1, 3, 36, 49],
+        "04": [33, 18, 26, 12, 26, 43, 47, 1, 48, 37, 40, 49],
+        "05": [10, 32, 30, 39, 33, 10, 36, 44, 33, 21, 35, 7, 10, 4, 26, 49],
+        "06": [41, 8, 9, 43, 25, 34, 33, 9, 43, 35, 48, 49],
+    }
+    for uid, seq in sequences.items():
+        valid_sequence = search_space.check_sequence(seq)
+        if not valid_sequence:
+            print(f"{uid} failed.")
+            continue
+        model = search_space.create_model(sequence=seq, model_input_shape=(128, 128, 3))
+        model.save(f"{path}/{uid}.h5")
+
+
 # ./nncase/ncc compile latency_datasets/Dataset_/model_0001.tflite latency_datasets/Dataset_/model_0001.kmodel -i
 # tflite -o kmodel --dataset nncase/calibration_dataset
 
@@ -147,7 +167,9 @@ def test_full_train():
     search_space = SearchSpaceMn(model_output_shape=2)
     tokens = search_space.generate_token()
     trainer = Trainer(tokens)
-    sequence = [38, 14, 4, 36, 40, 12, 41, 47, 34, 2, 38, 49]
+    sequence = [41, 8, 9, 43, 25, 34, 33, 9, 43, 35, 48, 49]
+    translated = search_space.translate_sequence(sequence)
     architectures = search_space.create_models(samples=[sequence], model_input_shape=(128, 128, 3))
     trained_acc = trainer.train_models(architectures, train_mode="full")[0]
+    print(translated)
     print(trained_acc)

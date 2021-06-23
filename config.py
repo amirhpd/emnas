@@ -11,24 +11,25 @@ trainer = {
     "dataset_path_fast": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
     "dataset_path_full": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678",
     "model_epochs_fast": 8,
-    "model_epochs_full": 10,
+    "model_epochs_full": 12,
     "model_validation_split": 0.2,
     "model_batch_size": 10,
     "verbose": 1,
-    "multi_obj_weight": 0.5
+    "objective_type": "exponential",  # linear, exponential
+    "multi_obj_parameter": 70
 }
 controller = {
     "max_no_of_layers": 32,
-    "agent_lr": 1e-4,
+    "agent_lr": 1e-5,
     "min_reward": 0.55,
     "dynamic_min_reward": False,
     "min_plays": 5,
     "max_plays": 20,
-    "alpha": 1e-3,  # learning rate in the policy gradient
+    "alpha": 1e-4,  # learning rate in the policy gradient
     "gamma": 0.99,  # decay rate of past observations
     "variance_threshold": 1e-2,
     "valid_actions": True,  # True: skips wrong sequences. False: assigns bad reward to wrong sequences
-    "valid_sequence_timeout": 10000
+    "valid_sequence_timeout": 1000
 }
 predictor = {
     "prediction_dataset": "latency_datasets/Dataset_3",
@@ -43,6 +44,6 @@ emnas = {
     "search_mode": "rl",  # rl, random, bruteforce
     "naive_threshold": 0.95,
     "naive_timeout": 1e3,
-    "no_of_episodes": 500,
+    "no_of_episodes": 600,
     "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
 }

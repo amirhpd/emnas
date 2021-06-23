@@ -14,7 +14,7 @@ import matplotlib
 import cv2
 
 matplotlib.use('TkAgg')
-plt.rcParams.update({'font.size': 16, 'mathtext.fontset': 'stix', 'font.family': 'STIXGeneral'})
+plt.rcParams.update({'font.size': 22, 'mathtext.fontset': 'stix', 'font.family': 'STIXGeneral'})
 
 model_output_shape = config.emnas["model_output_shape"]
 model_input_shape = config.emnas["model_input_shape"]
@@ -47,7 +47,7 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Loss")
     plt.grid()
-    plt.savefig(path + "/fig_1.png")
+    plt.savefig(path + "/fig_1.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["reward_per_episode"])), history["reward_per_episode"],
@@ -60,7 +60,7 @@ def _plot(history, path):
     plt.ylabel("Reward")
     plt.grid()
     plt.legend()
-    plt.savefig(path + "/fig_2.png")
+    plt.savefig(path + "/fig_2.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     bins = int(len(history["reward_per_episode"]) / 5)
@@ -70,7 +70,7 @@ def _plot(history, path):
     plt.xlabel("Reward")
     plt.ylabel("Count")
     plt.grid()
-    plt.savefig(path + "/fig_3.png")
+    plt.savefig(path + "/fig_3.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     min_acc = [i[0] for i in history["min_max"]]
@@ -80,7 +80,7 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.grid()
-    plt.savefig(path + "/fig_4.png")
+    plt.savefig(path + "/fig_4.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     max_acc = [i[1] for i in history["min_max"]]
@@ -90,7 +90,7 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.grid()
-    plt.savefig(path + "/fig_5.png")
+    plt.savefig(path + "/fig_5.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     best_acc = [i[0] for i in history["best_so_far"]]
@@ -99,7 +99,7 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Accuracy")
     plt.grid()
-    plt.savefig(path + "/fig_6.png")
+    plt.savefig(path + "/fig_6.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     best_lat = [i[1] for i in history["best_so_far"]]
@@ -108,7 +108,7 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Latency [ms]")
     plt.grid()
-    plt.savefig(path + "/fig_7.png")
+    plt.savefig(path + "/fig_7.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     best_rew = [i[2] for i in history["best_so_far"]]
@@ -117,7 +117,7 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.grid()
-    plt.savefig(path + "/fig_8.png")
+    plt.savefig(path + "/fig_8.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["reward_per_play"])), history["reward_per_play"])
@@ -126,7 +126,7 @@ def _plot(history, path):
     plt.xlabel("Play")
     plt.ylabel("Reward")
     plt.grid()
-    plt.savefig(path + "/fig_9.png")
+    plt.savefig(path + "/fig_9.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     bins = int(len(history["reward_per_play"]) / 5)
@@ -136,7 +136,7 @@ def _plot(history, path):
     plt.xlabel("Reward")
     plt.ylabel("Count")
     plt.grid()
-    plt.savefig(path + "/fig_10.png")
+    plt.savefig(path + "/fig_10.png", bbox_inches="tight", pad_inches=0.2)
 
     fig = plt.figure(figsize=img_size)
     plt.plot(np.arange(0, len(history["play_counts"])), history["play_counts"])
@@ -144,9 +144,9 @@ def _plot(history, path):
     plt.xlabel("Episode")
     plt.ylabel("Count")
     plt.grid()
-    plt.savefig(path + "/fig_11.png")
+    plt.savefig(path + "/fig_11.png", bbox_inches="tight", pad_inches=0.2)
 
-    img_list = [cv2.imread(path + f"/fig_{i}.png") for i in range(1, 12)]
+    img_list = [cv2.resize(cv2.imread(path + f"/fig_{i}.png"), (2020, 530)) for i in range(1, 12)]
     img = cv2.vconcat(img_list)
     cv2.imwrite(path + "/plots.png", img)
     [os.remove(path + f"/fig_{i}.png") for i in range(1, 12)]
