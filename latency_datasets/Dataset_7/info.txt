@@ -1,0 +1,51 @@
+Dataset_7
+MobileNet-like sequences
+min token length: 12
+max token length: 32
+kmodel conversion done in: 114607 s
+cpu latency measurement done in: 5217 s
+failed kmodel conversions are filled with 0
+failures are because conversion takes more than 3 min, or conversion throws error: Fatal: KPU allocator cannot allocate more memory.
+
+search space:
+{
+  "Conv2D": {
+    "filters": [16, 32, 64, 128, 256, 512],
+    "paddings": ["same"],
+    "kernel_sizes": [[1, 1], [3, 3]],
+    "strides": [[1, 1], [2, 2]]
+  },
+  "DepthwiseConv2D": {
+    "paddings": ["valid", "same", "same"],
+    "kernel_sizes": [[3, 3], [3, 3]],
+    "strides": [[1, 1], [1, 1], [2, 2]]
+  },
+  "General": {
+    "dropout": [0.001],
+    "zeropadding": [[0,1,0,1], [0,1,0,1], [0,1,0,1], [1,0,1,0], [1,1,1,1], [0,0,0,0]]
+  }
+}
+--------------------------------------
+accuracy dataset:
+dataset: dataset_openclose_678_half
+model_validation_split: 0.2
+model_batch_size: 10
+model_epochs: 8
+Found 1731 images belonging to 2 classes.
+Found 432 images belonging to 2 classes.
+stored: validation accuracy of last epoch
+too large models are skipped (sipeed_latency == nan or 0)
+DONE in 341392.11 sec (87 hours)
+----------------------------------
+table_ds2:
+accuracy measurement with dataset: dataset_small 
+(small openclose with suggestions)
+model_validation_split: 0.2
+model_batch_size: 10
+model_epochs: 5
+Found 480 images belonging to 2 classes.
+Found 120 images belonging to 2 classes.
+stored: validation accuracy of last epoch
+too large models are skipped (sipeed_latency == nan or 0)
+DONE in 60652.67 sec
+
