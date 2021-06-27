@@ -1,0 +1,3 @@
+NAS finished in 3261 sec. 
+Explored sequences: 1141 
+Total average reward: 0.6365805433829973
