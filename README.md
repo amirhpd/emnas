@@ -21,7 +21,7 @@ Following steps are needed for the first initialization:
 4. After these steps are done, the main search procedure can be executed several times by running the executable script [emnas\.py](emnas.py). Several hyper-parameters select and adjust the behaviors of the search system. All adjustable hyper-parameters are saved in a single file called [config\.py](config.py). 
 
 Current repository contains a search space that is inspired from [MobileNets](https://arxiv.org/abs/1704.04861)
-and contains predictor model files that are already built and trained on [Dataset_7](Dataset_7/table.csv).
+and contains predictor model files that are already built and trained on [Dataset_7](https://github.com/amirhpd/emnas/blob/master/latency_datasets/Dataset_7/table.csv).
 
 ### UML Diagram
 ![alt text](https://github.com/amirhpd/emnas/blob/master/media/overall_uml.png "Overall UML")
