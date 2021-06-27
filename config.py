@@ -8,8 +8,8 @@ search_space = {
     "model_metrics": ["accuracy"],
 }
 trainer = {
-    "dataset_path_fast": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678_half",
-    "dataset_path_full": "/home/amirhossein/Codes/Project/Dataset/Dataset_678/dataset_openclose_678",
+    "dataset_path_fast": ".../dataset_openclose_678_half",
+    "dataset_path_full": ".../dataset_openclose_678",
     "model_epochs_fast": 8,
     "model_epochs_full": 12,
     "model_validation_split": 0.2,
@@ -45,5 +45,5 @@ emnas = {
     "naive_threshold": 0.95,
     "naive_timeout": 1e3,
     "no_of_episodes": 600,
-    "log_path": "/home/amirhossein/Codes/NAS/emnas/logs"
+    "log_path": ".../emnas/logs"
 }

@@ -86,7 +86,7 @@ def test_sipeed_get_latency():
 
 
 def test_convert_kmodel():
-    latency_dataset = "/home/amirhossein/Codes/NAS/mobileNet/converted"
+    latency_dataset = ".../NAS/mobileNet/converted"
     sipeed_cam = CameraDrive()
     sipeed_cam.convert_kmodel(latency_dataset)
 
@@ -123,7 +123,7 @@ def test_create_convert_manual_sequence():
 
 
 def test_create_convert_sequences():
-    path = "/home/amirhossein/Codes/NAS/emnas/latency_datasets/Dataset_"
+    path = ".../NAS/emnas/latency_datasets/Dataset_"
     search_space = SearchSpaceMn(model_output_shape=2)
     sequences = {
         "01": [12, 4, 30, 14, 32, 39, 42, 26, 36, 13, 49],
