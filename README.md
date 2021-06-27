@@ -24,5 +24,5 @@ Current repository contains a search space that is inspired from [MobileNets](ht
 and contains predictor model files that are already built and trained on [Dataset_7](Dataset_7/table.csv).
 
 ### UML Diagram
-![alt text](https://github.com/amirhpd/emnas/media/overall_uml.png "Overall UML")
+![alt text](https://github.com/amirhpd/emnas/blob/master/media/overall_uml.png "Overall UML")
 
